@@ -42,12 +42,12 @@ export const Route = createFileRoute("/_authenticated/chat")({
   }),
   head: () => ({
     meta: [
-      { title: "Direct Messages — ScaleX Connect" },
+      { title: "Direct Messages — ScaleX" },
       {
         name: "description",
         content: "One-on-one instant messaging with verified SST campus batchmates and peers.",
       },
-      { property: "og:title", content: "Direct Messages — ScaleX Connect" },
+      { property: "og:title", content: "Direct Messages — ScaleX" },
       {
         property: "og:description",
         content: "One-on-one instant messaging with verified SST campus batchmates and peers.",

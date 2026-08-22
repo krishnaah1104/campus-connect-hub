@@ -47,13 +47,13 @@ const STATS = [
 export const Route = createFileRoute("/_authenticated/activities")({
   head: () => ({
     meta: [
-      { title: "Campus Activities — ScaleX Connect" },
+      { title: "Campus Activities — ScaleX" },
       {
         name: "description",
         content:
           "Hackathons, sports leagues, open mics and placement prep — all campus events in one place.",
       },
-      { property: "og:title", content: "Campus Activities — ScaleX Connect" },
+      { property: "og:title", content: "Campus Activities — ScaleX" },
       {
         property: "og:description",
         content:

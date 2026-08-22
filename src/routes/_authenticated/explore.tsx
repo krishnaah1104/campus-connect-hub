@@ -20,13 +20,13 @@ import { useDirectory, type Profile } from "@/hooks/useProfile";
 export const Route = createFileRoute("/_authenticated/explore")({
   head: () => ({
     meta: [
-      { title: "Explore Campus — ScaleX Connect" },
+      { title: "Explore Campus — ScaleX" },
       {
         name: "description",
         content:
           "Search every verified student by hostel, batch, degree, skills, clubs and achievements.",
       },
-      { property: "og:title", content: "Explore Campus — ScaleX Connect" },
+      { property: "og:title", content: "Explore Campus — ScaleX" },
       {
         property: "og:description",
         content:

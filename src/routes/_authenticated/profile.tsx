@@ -14,17 +14,17 @@ import { initialsOf } from "@/lib/campus";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "My Profile — ScaleX Connect" },
+      { title: "My Profile — ScaleX" },
       {
         name: "description",
         content:
-          "View and edit your verified student profile on ScaleX Connect.",
+          "View and edit your verified student profile on ScaleX.",
       },
-      { property: "og:title", content: "My Profile — ScaleX Connect" },
+      { property: "og:title", content: "My Profile — ScaleX" },
       {
         property: "og:description",
         content:
-          "View and edit your verified student profile on ScaleX Connect.",
+          "View and edit your verified student profile on ScaleX.",
       },
     ],
   }),

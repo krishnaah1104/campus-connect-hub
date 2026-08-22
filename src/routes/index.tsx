@@ -10,13 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ScaleX Connect — One Campus. Infinite Connections." },
+      { title: "ScaleX — One Campus. Infinite Connections." },
       {
         name: "description",
         content:
           "The verified student directory for SST. Find batchmates, project peers, clubs and campus life — all in one place.",
       },
-      { property: "og:title", content: "ScaleX Connect — One Campus. Infinite Connections." },
+      { property: "og:title", content: "ScaleX — One Campus. Infinite Connections." },
       {
         property: "og:description",
         content:

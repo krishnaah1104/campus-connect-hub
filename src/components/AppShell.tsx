@@ -1,16 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Bell,
-  BookmarkCheck,
-  Car,
   Compass,
-  Lightbulb,
   LogOut,
   Menu,
   MessageCircle,
-  Settings,
-  Shield,
   ShieldCheck,
   User,
   UsersRound,
@@ -20,6 +15,7 @@ import {
 
 import { initialsOf } from "@/lib/campus";
 import { useMyProfile } from "@/hooks/useProfile";
+import { useConversations } from "@/hooks/useChat";
 import { supabase } from "@/integrations/supabase/client";
 
 const TABS = [
@@ -29,20 +25,14 @@ const TABS = [
   { to: "/activities", label: "Activities", icon: Zap },
 ] as const;
 
-const NOTIFICATIONS = [
-  { icon: "💬", text: "Rahul Sharma sent you a direct message", time: "2m ago", unread: true },
-  { icon: "🤖", text: "New member joined AI/ML Club channel", time: "1h ago", unread: true },
-  { icon: "👀", text: "Your profile was viewed by 14 batchmates", time: "3h ago", unread: true },
-  { icon: "🏆", text: "Hackathon team activity updated in #hackathons", time: "1d ago", unread: false },
-];
-
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [sidebar, setSidebar] = useState(false);
   const [bell, setBell] = useState(false);
-  const [read, setRead] = useState(false);
+  const [markedReadAt, setMarkedReadAt] = useState<string | null>(null);
   const { data: profile, isLoading } = useMyProfile();
+  const { data: conversations } = useConversations();
 
   useEffect(() => {
     if (!isLoading && profile && !profile.onboarding_complete) {
@@ -55,7 +45,32 @@ export function AppShell({ children }: { children: ReactNode }) {
     setBell(false);
   }, [pathname]);
 
-  const unread = read ? 0 : NOTIFICATIONS.filter((n) => n.unread).length;
+  // Build real notification list from unread DMs
+  const dmNotifications = useMemo(() => {
+    if (!conversations) return [];
+    return conversations
+      .filter((c) => (c.unread_count ?? 0) > 0)
+      .map((c) => ({
+        id: c.id,
+        peerId: c.peer?.id,
+        peerName: c.peer?.full_name ?? "A classmate",
+        peerAvatar: c.peer?.avatar_url,
+        lastMessage: c.last_message_text,
+        lastMessageAt: c.last_message_at,
+        unreadCount: c.unread_count ?? 0,
+      }));
+  }, [conversations]);
+
+  // Total unread, zeroed after user clicks "mark all read"
+  const unread = useMemo(() => {
+    if (markedReadAt) {
+      // Count only notifs newer than when the user marked all read
+      return dmNotifications.filter(
+        (n) => new Date(n.lastMessageAt) > new Date(markedReadAt)
+      ).length;
+    }
+    return dmNotifications.length;
+  }, [dmNotifications, markedReadAt]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -82,7 +97,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-bold tracking-tight text-foreground">
-                ScaleX Connect
+                ScaleX
               </span>
               <span className="block truncate text-[11px] text-muted-foreground">
                 Scaler School of Technology
@@ -117,27 +132,65 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-popover shadow-card">
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <p className="text-sm font-semibold">Notifications</p>
-                  <button
-                    onClick={() => setRead(true)}
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
-                    Mark all as read
-                  </button>
-                </div>
-                <ul className="max-h-80 overflow-y-auto">
-                  {NOTIFICATIONS.map((n) => (
-                    <li
-                      key={n.text}
-                      className="flex gap-3 border-b border-border/60 px-4 py-3 last:border-0"
+                  {dmNotifications.length > 0 && (
+                    <button
+                      onClick={() => setMarkedReadAt(new Date().toISOString())}
+                      className="text-xs font-medium text-primary hover:underline"
                     >
-                      <span className="text-lg">{n.icon}</span>
-                      <span className="min-w-0">
-                        <span className="block text-sm text-foreground/90">{n.text}</span>
-                        <span className="block text-xs text-muted-foreground">{n.time}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+                {dmNotifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-center px-6">
+                    <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-semibold text-foreground/80">All caught up!</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      New messages from campus peers will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="max-h-80 overflow-y-auto">
+                    {dmNotifications.map((n) => (
+                      <li key={n.id} className="border-b border-border/60 last:border-0">
+                        <button
+                          onClick={() => {
+                            setBell(false);
+                            navigate({ to: "/chat", search: { peer: n.peerId } });
+                          }}
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-secondary/60 transition-colors"
+                        >
+                          {/* Avatar */}
+                          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-primary/30 bg-secondary text-xs font-bold">
+                            {n.peerAvatar ? (
+                              <img src={n.peerAvatar} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              initialsOf(n.peerName)
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5">
+                              <span className="block truncate text-sm font-semibold text-foreground">
+                                {n.peerName}
+                              </span>
+                              {n.unreadCount > 1 && (
+                                <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+                                  {n.unreadCount}
+                                </span>
+                              )}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {n.lastMessage ?? "Sent you a message"}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                            💬
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </div>
@@ -214,15 +267,8 @@ function SidebarLinks() {
         <NavItem to="/groups" icon={UsersRound} label="Group Channels" />
         <NavItem to="/activities" icon={Zap} label="Campus Activities" />
       </Section>
-      <Section title="Campus tools">
-        <NavItem to="/activities" icon={Car} label="Ride Pool" soon />
-        <NavItem to="/activities" icon={Lightbulb} label="Doubt Matching" soon />
-        <NavItem to="/activities" icon={Shield} label="Anonymous Space" soon />
-      </Section>
       <Section title="Account">
         <NavItem to="/profile" icon={User} label="My Profile" />
-        <NavItem to="/profile" icon={BookmarkCheck} label="Saved Profiles" soon />
-        <NavItem to="/profile" icon={Settings} label="Preferences & Privacy" soon />
       </Section>
     </div>
   );

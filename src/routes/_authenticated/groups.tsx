@@ -30,12 +30,12 @@ import { initialsOf } from "@/lib/campus";
 export const Route = createFileRoute("/_authenticated/groups")({
   head: () => ({
     meta: [
-      { title: "Group Channels — ScaleX Connect" },
+      { title: "Group Channels — ScaleX" },
       {
         name: "description",
         content: "Auto-enrolled batch, hostel, club and project channels for SST students.",
       },
-      { property: "og:title", content: "Group Channels — ScaleX Connect" },
+      { property: "og:title", content: "Group Channels — ScaleX" },
       {
         property: "og:description",
         content: "Auto-enrolled batch, hostel, club and project channels for SST students.",

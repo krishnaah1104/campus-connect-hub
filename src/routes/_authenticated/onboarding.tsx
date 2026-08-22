@@ -20,12 +20,12 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
     meta: [
-      { title: "Set up your campus profile — ScaleX Connect" },
+      { title: "Set up your campus profile — ScaleX" },
       {
         name: "description",
         content: "Fifteen seconds, zero typing. Pick your batch, degree, hostel, state and status.",
       },
-      { property: "og:title", content: "Set up your campus profile — ScaleX Connect" },
+      { property: "og:title", content: "Set up your campus profile — ScaleX" },
       {
         property: "og:description",
         content: "Fifteen seconds, zero typing. Pick your batch, degree, hostel, state and status.",
