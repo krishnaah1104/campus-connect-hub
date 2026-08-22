@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession, useMyProfile, type Profile } from "./useProfile";
 
@@ -53,16 +54,85 @@ export interface ChannelMessage {
 }
 
 // ──────────────────────────────────────────────────────────────
-// 1. Conversations (DM thread list)
+// 1. Conversations (DM thread list with global realtime listener)
 // ──────────────────────────────────────────────────────────────
 
 /**
  * Fetches all DM threads the current user participates in,
- * resolving the peer profile for each conversation.
+ * resolving the peer profile for each conversation and listening
+ * in real-time to any incoming direct messages.
  */
 export function useConversations() {
   const { data: user } = useSession();
   const uid = user?.id;
+  const queryClient = useQueryClient();
+  const subRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Global realtime listener for incoming messages and conversation updates
+  useEffect(() => {
+    if (!uid) return;
+
+    if (subRef.current) {
+      supabase.removeChannel(subRef.current);
+      subRef.current = null;
+    }
+
+    const channel = supabase
+      .channel(`global_dm_realtime:${uid}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "direct_messages",
+        },
+        async (payload) => {
+          // Immediately invalidate conversations to update unread count, badge, & last message
+          queryClient.invalidateQueries({ queryKey: ["conversations", uid] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+
+          // If an incoming message was sent by someone else, notify user
+          if (payload.eventType === "INSERT") {
+            const newMsg = payload.new as DirectMessage;
+            if (newMsg && newMsg.sender_id !== uid) {
+              const { data: sender } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", newMsg.sender_id)
+                .maybeSingle();
+
+              const senderName = sender?.full_name || "A classmate";
+              toast.info(`Message from ${senderName}`, {
+                description:
+                  newMsg.content.length > 50
+                    ? `${newMsg.content.slice(0, 50)}…`
+                    : newMsg.content,
+              });
+            }
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["conversations", uid] });
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }
+      )
+      .subscribe();
+
+    subRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      subRef.current = null;
+    };
+  }, [uid, queryClient]);
 
   return useQuery({
     queryKey: ["conversations", uid],

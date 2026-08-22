@@ -294,6 +294,10 @@ GRANT EXECUTE ON FUNCTION public.get_or_create_conversation(uuid, uuid) TO authe
 -- 9. SUPABASE REALTIME
 -- ═══════════════════════════════════════════════════════════════
 
+ALTER TABLE public.direct_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.conversations REPLICA IDENTITY FULL;
+ALTER TABLE public.channel_messages REPLICA IDENTITY FULL;
+
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE public.direct_messages;
 EXCEPTION WHEN duplicate_object THEN NULL;

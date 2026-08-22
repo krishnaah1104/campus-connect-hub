@@ -199,7 +199,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="mx-auto flex w-full max-w-[1400px]">
         <aside className="sticky top-[73px] hidden h-[calc(100vh-73px)] w-64 shrink-0 flex-col border-r border-border px-3 py-5 lg:flex">
-          <SidebarLinks />
+          <SidebarLinks unreadCount={unread} />
           <div className="mt-auto space-y-3 pt-4">
             <VerifiedBadge />
             <SignOutButton onClick={signOut} />
@@ -223,7 +223,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <SidebarLinks />
+              <SidebarLinks unreadCount={unread} />
             </div>
             <div className="mt-auto space-y-3 pt-4">
               <VerifiedBadge />
@@ -237,17 +237,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="glass-panel mx-auto flex max-w-md items-center justify-between gap-1 rounded-2xl p-1.5">
           {TABS.map((tab) => {
             const active = pathname.startsWith(tab.to);
+            const hasUnread = tab.to === "/chat" && unread > 0;
             return (
               <Link
                 key={tab.to}
                 to={tab.to}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-all duration-200 ${
+                className={`relative flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-all duration-200 ${
                   active
                     ? "bg-primary/15 text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <tab.icon className="h-5 w-5" />
+                <div className="relative">
+                  <tab.icon className="h-5 w-5" />
+                  {hasUnread && (
+                    <span className="absolute -top-1 -right-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-sm">
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
+                </div>
                 {tab.label}
               </Link>
             );
@@ -258,12 +266,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function SidebarLinks() {
+function SidebarLinks({ unreadCount }: { unreadCount: number }) {
   return (
     <div className="space-y-6">
       <Section title="Main">
         <NavItem to="/explore" icon={Compass} label="Explore Directory" />
-        <NavItem to="/chat" icon={MessageCircle} label="Direct Messages" />
+        <NavItem
+          to="/chat"
+          icon={MessageCircle}
+          label="Direct Messages"
+          badge={unreadCount > 0 ? unreadCount : undefined}
+        />
         <NavItem to="/groups" icon={UsersRound} label="Group Channels" />
         <NavItem to="/activities" icon={Zap} label="Campus Activities" />
       </Section>
@@ -290,11 +303,13 @@ function NavItem({
   icon: Icon,
   label,
   soon,
+  badge,
 }: {
   to: string;
   icon: typeof Compass;
   label: string;
   soon?: boolean;
+  badge?: number;
 }) {
   return (
     <Link
@@ -302,8 +317,18 @@ function NavItem({
       activeProps={{ className: "bg-primary/12 text-primary" }}
       className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/85 transition-colors duration-200 hover:bg-secondary"
     >
-      <Icon className="h-4.5 w-4.5 shrink-0" />
+      <div className="relative shrink-0">
+        <Icon className="h-4.5 w-4.5" />
+        {typeof badge === "number" && badge > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+        )}
+      </div>
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {typeof badge === "number" && badge > 0 && (
+        <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
       {soon && (
         <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
           Soon
