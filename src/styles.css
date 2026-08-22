@@ -161,3 +161,7 @@
   }
 }
 
+@utility gradient-hero {
+  background: var(--gradient-brand);
+}
+

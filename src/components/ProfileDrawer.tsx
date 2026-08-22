@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { MapPin, MessageCircle, ShieldCheck, X } from "lucide-react";
 import { initialsOf } from "@/lib/campus";
 import type { Profile } from "@/hooks/useProfile";
@@ -9,6 +10,7 @@ export function ProfileDrawer({
   student: Profile;
   onClose: () => void;
 }) {
+  const navigate = useNavigate();
   return (
     <div className="fixed inset-0 z-50">
       <button
@@ -76,7 +78,11 @@ export function ProfileDrawer({
 
         <div className="border-t border-border p-4">
           <button
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground"
+            onClick={() => {
+              onClose();
+              navigate({ to: "/chat", search: { peer: student.id } });
+            }}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.01]"
             style={{ background: "var(--gradient-brand)" }}
           >
             <MessageCircle className="h-4 w-4" />
