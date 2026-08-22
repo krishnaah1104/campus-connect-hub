@@ -66,19 +66,14 @@ export function useConversations() {
   const { data: user } = useSession();
   const uid = user?.id;
   const queryClient = useQueryClient();
-  const subRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Global realtime listener for incoming messages and conversation updates
   useEffect(() => {
     if (!uid) return;
 
-    if (subRef.current) {
-      supabase.removeChannel(subRef.current);
-      subRef.current = null;
-    }
-
+    const channelName = `global_dm_realtime_${uid}_${Date.now()}`;
     const channel = supabase
-      .channel(`global_dm_realtime:${uid}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -87,11 +82,10 @@ export function useConversations() {
           table: "direct_messages",
         },
         async (payload) => {
-          // Immediately invalidate conversations to update unread count, badge, & last message
-          queryClient.invalidateQueries({ queryKey: ["conversations", uid] });
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          // Instantly refetch conversations to update unread badge and notification count
+          await queryClient.refetchQueries({ queryKey: ["conversations", uid] });
 
-          // If an incoming message was sent by someone else, notify user
+          // If an incoming message was sent by someone else, notify with a toast alert
           if (payload.eventType === "INSERT") {
             const newMsg = payload.new as DirectMessage;
             if (newMsg && newMsg.sender_id !== uid) {
@@ -119,18 +113,14 @@ export function useConversations() {
           schema: "public",
           table: "conversations",
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["conversations", uid] });
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        async () => {
+          await queryClient.refetchQueries({ queryKey: ["conversations", uid] });
         }
       )
       .subscribe();
 
-    subRef.current = channel;
-
     return () => {
       supabase.removeChannel(channel);
-      subRef.current = null;
     };
   }, [uid, queryClient]);
 
