@@ -313,24 +313,3 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- ═══════════════════════════════════════════════════════════════
--- 10. SEED: DEFAULT CAMPUS CHANNELS
--- ═══════════════════════════════════════════════════════════════
-
-INSERT INTO public.channels (id, name, slug, description, category, category_label, pinned_notice, icon, is_auto_enrolled, batch_filter, hostel_filter, club_filter)
-VALUES
-  ('batch-2030', '#batch-2030-official', 'batch-2030-official', 'Official announcements, lecture updates, and discussions for Batch of 2030.', 'batch', 'Batch 2030', 'Welcome Batch of 2030! Check your orientation schedule.', '🎓', true, '2030', NULL, NULL),
-  ('batch-2029', '#batch-2029-official', 'batch-2029-official', 'Academic coordination and notices for Batch of 2029.', 'batch', 'Batch 2029', 'DSA Assignment 3 problem set published in the portal.', '🎓', true, '2029', NULL, NULL),
-  ('batch-2028', '#batch-2028-official', 'batch-2028-official', 'Academic updates, project submissions, and announcements for Batch of 2028.', 'batch', 'Batch 2028', 'Mid-term project review submissions due Friday 11:59 PM.', '🎓', true, '2028', NULL, NULL),
-  ('batch-2027', '#batch-2027-official', 'batch-2027-official', 'Senior batch coordination, internships, placements, and capstone.', 'batch', 'Batch 2027', 'Summer internship drive registrations open this week.', '🎓', true, '2027', NULL, NULL),
-  ('uw1-common', '#uniworld-1-common', 'uniworld-1-common', 'UW1 hostel activities, mess menu, study lounges, sports.', 'hostel', 'Hostel UW1', 'Table tennis tournament bracket on the common room notice board.', '🏢', true, NULL, 'Uniworld 1', NULL),
-  ('uw2-common', '#uniworld-2-common', 'uniworld-2-common', 'UW2 hostel community, quiet study hours, transit coordination.', 'hostel', 'Hostel UW2', 'Quiet study hours from 10 PM on floor 3 lounge.', '🏢', true, NULL, 'Uniworld 2', NULL),
-  ('aiml-club', '#ai-ml-club', 'ai-ml-club', 'ML research, Kaggle, LLM experiments, weekend paper readings.', 'club', 'AI/ML Club', 'Paper reading on MoE Architectures Sunday 7 PM.', '🤖', true, NULL, NULL, 'AI/ML Club'),
-  ('web-dev-club', '#web-dev-club', 'web-dev-club', 'Full-stack, React, TypeScript, cloud, open source building.', 'club', 'Web Dev Club', 'PR for the campus directory component merged!', '💻', true, NULL, NULL, 'Web Dev Club'),
-  ('robotics-club', '#robotics', 'robotics', 'Hardware prototyping, ROS, IoT, embedded systems.', 'club', 'Robotics', 'Hardware lab kits available for pickup in Block B.', '🦾', true, NULL, NULL, 'Robotics'),
-  ('finance-club', '#finance', 'finance', 'Algorithmic trading, quant finance, market analysis.', 'club', 'Finance', 'Weekly stock pitch & quant session Wednesday 8 PM.', '📈', true, NULL, NULL, 'Finance'),
-  ('open-source-club', '#open-source', 'open-source', 'GSoC, LFX, GitHub collaborations, campus tool contributions.', 'club', 'Open Source', 'Check the repo issues list for good first issues.', '🌐', true, NULL, NULL, 'Open Source'),
-  ('dsa-prep', '#dsa-and-interview-prep', 'dsa-and-interview-prep', 'Daily LeetCode, mock interviews, DP & graph patterns.', 'academics', 'DSA & Prep', 'Solving Tree DP & Graph BFS/DFS this week.', '⚡', true, NULL, NULL, NULL),
-  ('hackathon-squads', '#hackathon-squads', 'hackathon-squads', 'Find teammates, ideate, and coordinate for hackathons.', 'academics', 'Hackathons', 'Forming squads for the 24h AI Hackathon. Post your skill stack!', '🏆', true, NULL, NULL, NULL),
-  ('general', '#general-chit-chat', 'general-chit-chat', 'Open campus lounge for all SST students.', 'general', 'General', 'Keep discussions respectful and supportive across all batches.', '💬', true, NULL, NULL, NULL)
-ON CONFLICT (id) DO NOTHING;
