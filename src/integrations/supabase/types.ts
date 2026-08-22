@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          achievements: string[]
+          avatar_url: string | null
+          batch: string | null
+          bio: string | null
+          cgpa: number | null
+          cgpa_public: boolean
+          clubs: string[]
+          course: string | null
+          created_at: string
+          degree: string | null
+          email: string | null
+          full_name: string | null
+          home_state: string | null
+          hostel: string | null
+          id: string
+          life_status: string | null
+          onboarding_complete: boolean
+          roles: string[]
+          skills: string[]
+          updated_at: string
+        }
+        Insert: {
+          achievements?: string[]
+          avatar_url?: string | null
+          batch?: string | null
+          bio?: string | null
+          cgpa?: number | null
+          cgpa_public?: boolean
+          clubs?: string[]
+          course?: string | null
+          created_at?: string
+          degree?: string | null
+          email?: string | null
+          full_name?: string | null
+          home_state?: string | null
+          hostel?: string | null
+          id: string
+          life_status?: string | null
+          onboarding_complete?: boolean
+          roles?: string[]
+          skills?: string[]
+          updated_at?: string
+        }
+        Update: {
+          achievements?: string[]
+          avatar_url?: string | null
+          batch?: string | null
+          bio?: string | null
+          cgpa?: number | null
+          cgpa_public?: boolean
+          clubs?: string[]
+          course?: string | null
+          created_at?: string
+          degree?: string | null
+          email?: string | null
+          full_name?: string | null
+          home_state?: string | null
+          hostel?: string | null
+          id?: string
+          life_status?: string | null
+          onboarding_complete?: boolean
+          roles?: string[]
+          skills?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
