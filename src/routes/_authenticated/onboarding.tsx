@@ -156,7 +156,7 @@ function Onboarding() {
             value={degree}
             onChange={setDegree}
             disabled={locked}
-            lockedValue={locked ? "BITS" : undefined}
+            lockedValue={locked ? "BITS" : ""}
           />
           {locked && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
