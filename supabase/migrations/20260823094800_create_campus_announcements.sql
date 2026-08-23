@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.campus_announcements (
   title text NOT NULL,
   description text NOT NULL,
   category text NOT NULL DEFAULT 'announcement',
+  club_name text,
   event_date text,
   link_url text,
   is_pinned boolean NOT NULL DEFAULT false,
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.campus_announcements (
 CREATE INDEX IF NOT EXISTS idx_announcements_created ON public.campus_announcements (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_announcements_creator ON public.campus_announcements (creator_id);
 CREATE INDEX IF NOT EXISTS idx_announcements_category ON public.campus_announcements (category);
+CREATE INDEX IF NOT EXISTS idx_announcements_club ON public.campus_announcements (club_name);
 
 -- 3. Enable RLS
 ALTER TABLE public.campus_announcements ENABLE ROW LEVEL SECURITY;
@@ -33,19 +35,13 @@ CREATE POLICY "View announcements"
   TO authenticated
   USING (true);
 
--- Only users with a non-empty title/position or instructors can create announcements
+-- Users can create announcements
 CREATE POLICY "Create announcements by titled members"
   ON public.campus_announcements
   FOR INSERT
   TO authenticated
   WITH CHECK (
     auth.uid() = creator_id
-    AND EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid()
-        AND profiles.title IS NOT NULL
-        AND trim(profiles.title) <> ''
-    )
   );
 
 -- Creators and admins can update their own announcements

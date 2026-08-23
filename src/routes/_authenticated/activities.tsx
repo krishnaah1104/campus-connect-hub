@@ -17,6 +17,8 @@ import {
   Lock,
   Megaphone,
   X,
+  Tag,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
@@ -28,8 +30,10 @@ import {
   useDeleteAnnouncement,
   type CampusAnnouncement,
 } from "@/hooks/useAnnouncements";
-import { initialsOf } from "@/lib/campus";
+import { CLUBS, ROLES, initialsOf } from "@/lib/campus";
 import { formatRelativeTime } from "@/components/chat/ChatListItem";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/activities")({
   head: () => ({
@@ -62,6 +66,7 @@ const CATEGORIES = [
 
 function ActivitiesPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: myProfile, user } = useMyProfile();
   const { data: students, isLoading: isDirLoading } = useDirectory();
   const { data: channels, isLoading: isChannelsLoading } = useChannels();
@@ -70,27 +75,59 @@ function ActivitiesPage() {
   const createAnnouncement = useCreateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
 
+  const [selectedClubFilter, setSelectedClubFilter] = useState<string>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>("announcement");
+  const [selectedClub, setSelectedClub] = useState<string>("");
+  const [customRole, setCustomRole] = useState<string>("");
   const [eventDate, setEventDate] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [isPinned, setIsPinned] = useState(false);
 
-  // Permission check: only users with a title/position (Instructors, Club Leads, etc.) can post
-  const canPost = Boolean(myProfile?.title && myProfile.title.trim().length > 0);
+  const effectiveTitle = myProfile?.title?.trim() || customRole.trim();
 
   const totalStudents = (students ?? []).length;
   const clubChannels = (channels ?? []).filter((c) => c.category === "club");
   const academicChannels = (channels ?? []).filter((c) => c.category === "academics");
   const totalChannels = (channels ?? []).length;
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  // Filtered announcements
+  const filteredAnnouncements = (announcements ?? []).filter((a) => {
+    if (selectedClubFilter === "all") return true;
+    return a.club_name === selectedClubFilter;
+  });
+
+  const handleOpenModal = () => {
+    if (myProfile?.title) {
+      setCustomRole(myProfile.title);
+    }
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       toast.error("Please provide both a title and description.");
       return;
+    }
+
+    if (!effectiveTitle) {
+      toast.error("Please specify your official Role or Title (e.g. Instructor, Club Lead).");
+      return;
+    }
+
+    // If user didn't have a title in their profile, update it now
+    if (user && (!myProfile?.title || myProfile.title !== effectiveTitle)) {
+      await supabase
+        .from("profiles")
+        .update({ title: effectiveTitle })
+        .eq("id", user.id);
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["directory"] });
     }
 
     createAnnouncement.mutate(
@@ -98,6 +135,7 @@ function ActivitiesPage() {
         title,
         description,
         category,
+        club_name: selectedClub || null,
         event_date: eventDate || null,
         link_url: linkUrl || null,
         is_pinned: isPinned,
@@ -107,6 +145,7 @@ function ActivitiesPage() {
           setIsCreateModalOpen(false);
           setTitle("");
           setDescription("");
+          setSelectedClub("");
           setEventDate("");
           setLinkUrl("");
           setIsPinned(false);
@@ -136,21 +175,14 @@ function ActivitiesPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {canPost ? (
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105"
-                style={{ background: "var(--gradient-brand)" }}
-              >
-                <Plus className="h-4 w-4" />
-                <span>Post Announcement</span>
-              </button>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-card/60 px-3 py-2 text-xs text-muted-foreground">
-                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Posting reserved for Instructors & Club Leads</span>
-              </div>
-            )}
+            <button
+              onClick={handleOpenModal}
+              className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105"
+              style={{ background: "var(--gradient-brand)" }}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Post Announcement</span>
+            </button>
           </div>
         </div>
 
@@ -211,21 +243,40 @@ function ActivitiesPage() {
 
         {/* ─── Official Campus Announcements Feed ─── */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <Megaphone className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                 Official Campus Announcements
               </h2>
             </div>
-            {canPost && (
+
+            {/* Club Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full text-xs">
               <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="text-xs font-semibold text-primary hover:underline"
+                onClick={() => setSelectedClubFilter("all")}
+                className={`rounded-xl px-2.5 py-1 font-semibold transition-colors shrink-0 ${
+                  selectedClubFilter === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
               >
-                + New Announcement
+                All Feed
               </button>
-            )}
+              {CLUBS.map((club) => (
+                <button
+                  key={club}
+                  onClick={() => setSelectedClubFilter(club)}
+                  className={`rounded-xl px-2.5 py-1 font-semibold transition-colors shrink-0 ${
+                    selectedClubFilter === club
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {club}
+                </button>
+              ))}
+            </div>
           </div>
 
           {isAnnouncementsLoading ? (
@@ -234,35 +285,35 @@ function ActivitiesPage() {
                 <div key={i} className="h-32 animate-pulse rounded-3xl bg-card" />
               ))}
             </div>
-          ) : !announcements || announcements.length === 0 ? (
+          ) : filteredAnnouncements.length === 0 ? (
             <div className="rounded-3xl border border-border/70 bg-card/40 p-8 text-center space-y-3">
               <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-secondary text-primary shadow-sm">
                 <Calendar className="h-6 w-6" />
               </div>
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-foreground">
-                  No Announcements Posted Yet
+                  {selectedClubFilter === "all"
+                    ? "No Announcements Posted Yet"
+                    : `No announcements for ${selectedClubFilter} yet`}
                 </h3>
                 <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
                   Campus hackathons, club sessions, and faculty updates will appear here once announced by instructors and club leads.
                 </p>
               </div>
-              {canPost && (
-                <div className="pt-2">
-                  <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
-                    style={{ background: "var(--gradient-brand)" }}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Create First Announcement</span>
-                  </button>
-                </div>
-              )}
+              <div className="pt-2">
+                <button
+                  onClick={handleOpenModal}
+                  className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
+                  style={{ background: "var(--gradient-brand)" }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Create an Announcement</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid gap-4">
-              {announcements.map((item) => {
+              {filteredAnnouncements.map((item) => {
                 const isCreator = user?.id === item.creator_id;
                 const catObj =
                   CATEGORIES.find((c) => c.key === item.category) ?? CATEGORIES[0]!;
@@ -276,7 +327,7 @@ function ActivitiesPage() {
                         : "border-border/80 bg-card/70 hover:border-primary/30"
                     }`}
                   >
-                    {/* Top Row: Author Info + Category Badge */}
+                    {/* Top Row: Author Info + Category & Club Badges */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-secondary text-xs font-bold">
@@ -313,13 +364,20 @@ function ActivitiesPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0 justify-end">
                         {item.is_pinned && (
                           <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
                             <Pin className="h-3 w-3 rotate-45" />
                             Pinned
                           </span>
                         )}
+
+                        {item.club_name && (
+                          <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            {item.club_name}
+                          </span>
+                        )}
+
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${catObj.color}`}
                         >
@@ -465,7 +523,7 @@ function ActivitiesPage() {
                 <div>
                   <h2 className="text-base font-bold text-foreground">Post Campus Announcement</h2>
                   <p className="text-xs text-muted-foreground">
-                    Posting as {myProfile?.full_name} ({myProfile?.title})
+                    Publish an official notice, club event, or hackathon
                   </p>
                 </div>
                 <button
@@ -477,6 +535,47 @@ function ActivitiesPage() {
               </div>
 
               <form onSubmit={handleCreateSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Role / Position Section */}
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-primary flex items-center gap-1">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Your Official Role / Title</span>
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">
+                      {myProfile?.title ? "Saved in Profile" : "Required to publish"}
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={customRole}
+                    onChange={(e) => setCustomRole(e.target.value)}
+                    placeholder="e.g. Instructor, VP of AI Club, Lead Organizer, Hostel Incharge"
+                    required
+                    className="h-10 w-full rounded-xl border border-input bg-card px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20 font-medium"
+                  />
+
+                  {/* Preset quick buttons */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {ROLES.map((role) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setCustomRole(role)}
+                        className={`rounded-lg border px-2 py-0.5 text-[10px] transition-colors ${
+                          customRole === role
+                            ? "border-primary bg-primary/25 text-primary font-bold shadow-sm"
+                            : "border-border/70 bg-card/80 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {role === "Instructor" ? "🎓 " + role : role}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Announcement Title */}
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground">
                     Announcement Title <span className="text-destructive">*</span>
@@ -491,6 +590,41 @@ function ActivitiesPage() {
                   />
                 </div>
 
+                {/* Associated Club */}
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Associated Club (Optional)
+                  </label>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClub("")}
+                      className={`rounded-xl border px-2.5 py-1 text-xs transition-all ${
+                        selectedClub === ""
+                          ? "border-primary bg-primary/15 text-primary font-bold shadow-sm"
+                          : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      🌐 Campus-wide
+                    </button>
+                    {CLUBS.map((club) => (
+                      <button
+                        key={club}
+                        type="button"
+                        onClick={() => setSelectedClub(club)}
+                        className={`rounded-xl border px-2.5 py-1 text-xs transition-all ${
+                          selectedClub === club
+                            ? "border-primary bg-primary/15 text-primary font-bold shadow-sm"
+                            : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {club}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category Selection */}
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground">Category</label>
                   <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -511,6 +645,7 @@ function ActivitiesPage() {
                   </div>
                 </div>
 
+                {/* Description */}
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground">
                     Description / Details <span className="text-destructive">*</span>
@@ -525,6 +660,7 @@ function ActivitiesPage() {
                   />
                 </div>
 
+                {/* Date & Link */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground">
@@ -576,7 +712,7 @@ function ActivitiesPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={createAnnouncement.isPending || !title.trim() || !description.trim()}
+                    disabled={createAnnouncement.isPending || !title.trim() || !description.trim() || !effectiveTitle}
                     className="rounded-xl px-5 py-2 text-xs font-bold text-primary-foreground shadow-glow disabled:opacity-50"
                     style={{ background: "var(--gradient-brand)" }}
                   >

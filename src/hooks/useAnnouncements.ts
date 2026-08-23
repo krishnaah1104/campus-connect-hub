@@ -10,6 +10,7 @@ export interface CampusAnnouncement {
   title: string;
   description: string;
   category: "announcement" | "hackathon" | "club_event" | "workshop" | "sports" | "general";
+  club_name: string | null;
   event_date: string | null;
   link_url: string | null;
   is_pinned: boolean;
@@ -92,6 +93,7 @@ export function useCreateAnnouncement() {
       title,
       description,
       category = "announcement",
+      club_name,
       event_date,
       link_url,
       is_pinned = false,
@@ -99,6 +101,7 @@ export function useCreateAnnouncement() {
       title: string;
       description: string;
       category?: string;
+      club_name?: string | null;
       event_date?: string | null;
       link_url?: string | null;
       is_pinned?: boolean;
@@ -112,6 +115,7 @@ export function useCreateAnnouncement() {
           title: title.trim(),
           description: description.trim(),
           category,
+          club_name: club_name?.trim() || null,
           event_date: event_date?.trim() || null,
           link_url: link_url?.trim() || null,
           is_pinned,
