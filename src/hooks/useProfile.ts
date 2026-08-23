@@ -20,12 +20,16 @@ export function useMyProfile() {
     queryKey: ["profile", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
+      if (!user?.id) return null;
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user!.id)
+        .eq("id", user.id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        console.warn("[useMyProfile] fetch error:", error.message);
+        return null;
+      }
       return data as Profile | null;
     },
   });
@@ -41,7 +45,10 @@ export function useDirectory() {
         .select("*")
         .eq("onboarding_complete", true)
         .order("created_at", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.warn("[useDirectory] fetch error:", error.message);
+        return [];
+      }
       return (data ?? []) as Profile[];
     },
   });

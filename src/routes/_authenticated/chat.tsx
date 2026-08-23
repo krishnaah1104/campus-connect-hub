@@ -91,18 +91,22 @@ function ChatRoute() {
 
   // Handle deep-link: ?peer=<userId>
   useEffect(() => {
-    if (!peerQuery || !user) return;
+    if (!peerQuery || !user || isConversationsLoading) return;
+    if (peerQuery === user.id) return; // Prevent chatting with self
 
     setSelectedPeerId(peerQuery);
 
     // Find existing conversation with this peer or create one
     const existing = conversations?.find(
-      (c) => c.peer?.id === peerQuery
+      (c) =>
+        c.peer?.id === peerQuery ||
+        c.participant_1 === peerQuery ||
+        c.participant_2 === peerQuery
     );
 
     if (existing) {
       setActiveConversationId(existing.id);
-    } else {
+    } else if (!startConversation.isPending) {
       startConversation.mutate(peerQuery, {
         onSuccess: (convId) => {
           setActiveConversationId(convId);
@@ -112,7 +116,7 @@ function ChatRoute() {
         },
       });
     }
-  }, [peerQuery, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [peerQuery, user?.id, isConversationsLoading, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mark messages as read when viewing a conversation
   useEffect(() => {
@@ -123,8 +127,8 @@ function ChatRoute() {
 
   // Resolve the active conversation's peer profile
   const activePeer = useMemo((): Profile | null => {
-    if (!activeConversationId || !conversations) return null;
-    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!activeConversationId) return null;
+    const conv = (conversations ?? []).find((c) => c.id === activeConversationId);
     if (conv?.peer) return conv.peer;
 
     // Fallback: look up the peer from directory
@@ -368,8 +372,9 @@ function ChatRoute() {
             !activeConversationId ? "hidden lg:flex" : "flex"
           }`}
         >
-          {activeConversationId && activePeer ? (
-            <div className="flex h-full flex-col">
+          {activeConversationId ? (
+            activePeer ? (
+              <div className="flex h-full flex-col">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-border/80 bg-card/60 px-4 py-3 backdrop-blur-md">
                 <div className="flex items-center gap-3 min-w-0">
@@ -550,42 +555,66 @@ function ChatRoute() {
               </div>
             </div>
           ) : (
-            /* Empty state — no conversation selected */
-            <div className="grid h-full place-items-center p-6 text-center">
-              <div className="max-w-sm">
-                <div
-                  className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl text-primary-foreground shadow-glow"
-                  style={{ background: "var(--gradient-brand)" }}
+            /* Peer profile loading skeleton */
+            <div className="flex h-full flex-col p-4 space-y-4">
+              <div className="flex items-center gap-3 border-b border-border/80 pb-3">
+                <button
+                  onClick={handleBackToList}
+                  className="grid h-8 w-8 place-items-center rounded-lg border border-border text-foreground transition-colors hover:bg-secondary lg:hidden"
+                  aria-label="Back to conversations"
                 >
-                  <MessageCircle className="h-8 w-8" />
-                </div>
-                <h2 className="text-xl font-bold tracking-tight">Your Direct Messages</h2>
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  Select a student from the list or start a new chat with any classmate from the
-                  campus directory.
-                </p>
-                <div className="mt-6 flex flex-col gap-2">
-                  <button
-                    onClick={() => setShowNewChatModal(true)}
-                    className="flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground"
-                    style={{ background: "var(--gradient-brand)" }}
-                  >
-                    <MessageSquarePlus className="h-4 w-4" />
-                    New Conversation
-                  </button>
-                  <button
-                    onClick={() => navigate({ to: "/explore" })}
-                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary"
-                  >
-                    <Compass className="h-4 w-4" />
-                    Explore Campus Directory
-                  </button>
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <div className="h-10 w-10 animate-pulse rounded-full bg-card" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-4 w-32 animate-pulse rounded bg-card" />
+                  <div className="h-3 w-20 animate-pulse rounded bg-card" />
                 </div>
               </div>
+              <div className="flex-1 space-y-3 p-4">
+                <div className="h-10 w-48 animate-pulse rounded-2xl bg-card" />
+                <div className="h-10 w-64 animate-pulse rounded-2xl bg-card ml-auto" />
+                <div className="h-10 w-52 animate-pulse rounded-2xl bg-card" />
+              </div>
             </div>
-          )}
-        </main>
-      </div>
+          )
+        ) : (
+          /* Empty state — no conversation selected */
+          <div className="grid h-full place-items-center p-6 text-center">
+            <div className="max-w-sm">
+              <div
+                className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl text-primary-foreground shadow-glow"
+                style={{ background: "var(--gradient-brand)" }}
+              >
+                <MessageCircle className="h-8 w-8" />
+              </div>
+              <h2 className="text-xl font-bold tracking-tight">Your Direct Messages</h2>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Select a student from the list or start a new chat with any classmate from the
+                campus directory.
+              </p>
+              <div className="mt-6 flex flex-col gap-2">
+                <button
+                  onClick={() => setShowNewChatModal(true)}
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground"
+                  style={{ background: "var(--gradient-brand)" }}
+                >
+                  <MessageSquarePlus className="h-4 w-4" />
+                  New Conversation
+                </button>
+                <button
+                  onClick={() => navigate({ to: "/explore" })}
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary"
+                >
+                  <Compass className="h-4 w-4" />
+                  Explore Campus Directory
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
 
       {/* ─── New Chat Modal ─── */}
       {showNewChatModal && (
