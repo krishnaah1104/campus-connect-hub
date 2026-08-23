@@ -99,3 +99,76 @@ export function initialsOf(name: string | null | undefined) {
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+const ACRONYM_MAP: Record<string, string> = {
+  "c++": "C++",
+  "cpp": "C++",
+  "c#": "C#",
+  "csharp": "C#",
+  "dsa": "DSA",
+  "ai/ml": "AI/ML",
+  "aiml": "AI/ML",
+  "ml": "ML",
+  "ai": "AI",
+  "nlp": "NLP",
+  "cv": "CV",
+  "llm": "LLM",
+  "llms": "LLMs",
+  "gsoc": "GSoC",
+  "lfx": "LFX",
+  "icpc": "ICPC",
+  "sih": "SIH",
+  "ui/ux": "UI/UX",
+  "ui": "UI",
+  "ux": "UX",
+  "os": "OS",
+  "dbms": "DBMS",
+  "sql": "SQL",
+  "nosql": "NoSQL",
+  "aws": "AWS",
+  "gcp": "GCP",
+  "go": "Go",
+  "golang": "Go",
+  "js": "JavaScript",
+  "ts": "TypeScript",
+  "javascript": "JavaScript",
+  "typescript": "TypeScript",
+  "react": "React",
+  "reactjs": "React",
+  "react.js": "React",
+  "node": "Node.js",
+  "nodejs": "Node.js",
+  "node.js": "Node.js",
+  "next": "Next.js",
+  "nextjs": "Next.js",
+  "next.js": "Next.js",
+  "vue": "Vue.js",
+  "vuejs": "Vue.js",
+  "python": "Python",
+  "java": "Java",
+  "rust": "Rust",
+  "solidity": "Solidity",
+  "figma": "Figma",
+  "docker": "Docker",
+  "kubernetes": "Kubernetes",
+  "graphql": "GraphQL",
+  "rest": "REST API",
+  "api": "API",
+  "devops": "DevOps",
+  "system design": "System Design",
+};
+
+export function normalizeTag(tag: string): string {
+  const trimmed = tag.trim().replace(/\s+/g, " ");
+  if (!trimmed) return "";
+
+  const lower = trimmed.toLowerCase();
+  if (ACRONYM_MAP[lower]) {
+    return ACRONYM_MAP[lower];
+  }
+
+  return trimmed
+    .split(" ")
+    .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1).toLowerCase() : ""))
+    .join(" ");
+}

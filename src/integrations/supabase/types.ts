@@ -20,6 +20,7 @@ export type Database = {
           avatar_url: string | null
           batch: string | null
           bio: string | null
+          bus_opted: boolean
           cgpa: number | null
           cgpa_public: boolean
           clubs: string[]
@@ -28,13 +29,19 @@ export type Database = {
           degree: string | null
           email: string | null
           full_name: string | null
+          github_url: string | null
           home_state: string | null
           hostel: string | null
           id: string
+          interests: string[]
           life_status: string | null
+          linkedin_url: string | null
           onboarding_complete: boolean
+          portfolio_url: string | null
           roles: string[]
           skills: string[]
+          title: string | null
+          twitter_url: string | null
           updated_at: string
         }
         Insert: {
@@ -42,6 +49,7 @@ export type Database = {
           avatar_url?: string | null
           batch?: string | null
           bio?: string | null
+          bus_opted?: boolean
           cgpa?: number | null
           cgpa_public?: boolean
           clubs?: string[]
@@ -50,13 +58,19 @@ export type Database = {
           degree?: string | null
           email?: string | null
           full_name?: string | null
+          github_url?: string | null
           home_state?: string | null
           hostel?: string | null
           id: string
+          interests?: string[]
           life_status?: string | null
+          linkedin_url?: string | null
           onboarding_complete?: boolean
+          portfolio_url?: string | null
           roles?: string[]
           skills?: string[]
+          title?: string | null
+          twitter_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -64,6 +78,7 @@ export type Database = {
           avatar_url?: string | null
           batch?: string | null
           bio?: string | null
+          bus_opted?: boolean
           cgpa?: number | null
           cgpa_public?: boolean
           clubs?: string[]
@@ -72,13 +87,19 @@ export type Database = {
           degree?: string | null
           email?: string | null
           full_name?: string | null
+          github_url?: string | null
           home_state?: string | null
           hostel?: string | null
           id?: string
+          interests?: string[]
           life_status?: string | null
+          linkedin_url?: string | null
           onboarding_complete?: boolean
+          portfolio_url?: string | null
           roles?: string[]
           skills?: string[]
+          title?: string | null
+          twitter_url?: string | null
           updated_at?: string
         }
         Relationships: []
