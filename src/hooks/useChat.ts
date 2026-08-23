@@ -748,7 +748,7 @@ export function useCreateChannel() {
       if (error) throw error;
 
       return {
-        ...(data as Record<string, unknown>),
+        ...(data as unknown as Record<string, unknown>),
         member_count: 1,
       } as unknown as Channel;
     },
