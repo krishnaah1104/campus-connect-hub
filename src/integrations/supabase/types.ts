@@ -109,6 +109,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_anonymous_queue: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      find_or_join_anonymous_match: {
+        Args: { p_alias: string; p_avatar: string; p_topic?: string }
+        Returns: Json
+      }
       get_or_create_conversation: {
         Args: { user_a: string; user_b: string }
         Returns: string
@@ -116,6 +124,14 @@ export type Database = {
       is_admin: {
         Args: { uid?: string }
         Returns: boolean
+      }
+      leave_anonymous_session: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      reveal_anonymous_identity: {
+        Args: { p_session_id: string }
+        Returns: Json
       }
     }
     Enums: {

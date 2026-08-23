@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedActivitiesRouteImport } from './routes/_authenticated/activities'
+import { Route as AuthenticatedAnonymousRouteImport } from './routes/_authenticated/anonymous'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedExploreRouteImport } from './routes/_authenticated/explore'
 import { Route as AuthenticatedGroupsRouteImport } from './routes/_authenticated/groups'
@@ -30,6 +31,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedActivitiesRoute = AuthenticatedActivitiesRouteImport.update({
   id: '/activities',
   path: '/activities',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAnonymousRoute = AuthenticatedAnonymousRouteImport.update({
+  id: '/anonymous',
+  path: '/anonymous',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
@@ -61,6 +67,7 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activities': typeof AuthenticatedActivitiesRoute
+  '/anonymous': typeof AuthenticatedAnonymousRoute
   '/chat': typeof AuthenticatedChatRoute
   '/explore': typeof AuthenticatedExploreRoute
   '/groups': typeof AuthenticatedGroupsRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activities': typeof AuthenticatedActivitiesRoute
+  '/anonymous': typeof AuthenticatedAnonymousRoute
   '/chat': typeof AuthenticatedChatRoute
   '/explore': typeof AuthenticatedExploreRoute
   '/groups': typeof AuthenticatedGroupsRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/activities': typeof AuthenticatedActivitiesRoute
+  '/_authenticated/anonymous': typeof AuthenticatedAnonymousRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/explore': typeof AuthenticatedExploreRoute
   '/_authenticated/groups': typeof AuthenticatedGroupsRoute
@@ -89,14 +98,15 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/activities' | '/chat' | '/explore' | '/groups' | '/onboarding' | '/profile'
+  fullPaths: '/' | '/activities' | '/anonymous' | '/chat' | '/explore' | '/groups' | '/onboarding' | '/profile'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/activities' | '/chat' | '/explore' | '/groups' | '/onboarding' | '/profile'
+  to: '/' | '/activities' | '/anonymous' | '/chat' | '/explore' | '/groups' | '/onboarding' | '/profile'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/_authenticated/activities'
+    | '/_authenticated/anonymous'
     | '/_authenticated/chat'
     | '/_authenticated/explore'
     | '/_authenticated/groups'
@@ -130,6 +140,13 @@ declare module '@tanstack/react-router' {
       path: '/activities'
       fullPath: '/activities'
       preLoaderRoute: typeof AuthenticatedActivitiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/anonymous': {
+      id: '/_authenticated/anonymous'
+      path: '/anonymous'
+      fullPath: '/anonymous'
+      preLoaderRoute: typeof AuthenticatedAnonymousRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/chat': {
@@ -172,6 +189,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivitiesRoute: typeof AuthenticatedActivitiesRoute
+  AuthenticatedAnonymousRoute: typeof AuthenticatedAnonymousRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedExploreRoute: typeof AuthenticatedExploreRoute
   AuthenticatedGroupsRoute: typeof AuthenticatedGroupsRoute
@@ -181,6 +199,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivitiesRoute: AuthenticatedActivitiesRoute,
+  AuthenticatedAnonymousRoute: AuthenticatedAnonymousRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedExploreRoute: AuthenticatedExploreRoute,
   AuthenticatedGroupsRoute: AuthenticatedGroupsRoute,

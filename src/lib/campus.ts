@@ -172,3 +172,71 @@ export function normalizeTag(tag: string): string {
     .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1).toLowerCase() : ""))
     .join(" ");
 }
+
+// ══════════════════════════════════════════════════════════════
+// VIBE MODE (ANONYMOUS CAMPUS MATCHING) CONSTANTS
+// ══════════════════════════════════════════════════════════════
+
+export interface AnonIdentity {
+  alias: string;
+  avatar: string;
+}
+
+export const ANON_IDENTITIES: readonly AnonIdentity[] = [
+  { alias: "Cyber Falcon", avatar: "⚡" },
+  { alias: "Neon Fox", avatar: "🦊" },
+  { alias: "Night Owl", avatar: "🦉" },
+  { alias: "Quantum Husky", avatar: "🚀" },
+  { alias: "Shadow Wolf", avatar: "🐺" },
+  { alias: "Storm Eagle", avatar: "🦅" },
+  { alias: "Binary Dragon", avatar: "🐉" },
+  { alias: "Pixel Shark", avatar: "🦈" },
+  { alias: "Arctic Penguin", avatar: "🐧" },
+  { alias: "Solar Lion", avatar: "🦁" },
+  { alias: "Turbo Bee", avatar: "🐝" },
+  { alias: "Polar Bear", avatar: "🐻" },
+  { alias: "Glitch Butterfly", avatar: "🦋" },
+  { alias: "Code Cobra", avatar: "🐍" },
+  { alias: "Deep Whale", avatar: "🐳" },
+  { alias: "Neon Gecko", avatar: "🦎" },
+  { alias: "Ghost Otter", avatar: "🦦" },
+  { alias: "Matrix Panther", avatar: "🐆" },
+  { alias: "Cosmic Panda", avatar: "🐼" },
+  { alias: "Rocket Cheetah", avatar: "🐆" },
+  { alias: "Iron Badger", avatar: "🦡" },
+  { alias: "Stealth Raven", avatar: "🐦‍⬛" },
+  { alias: "Atomic Tiger", avatar: "🐯" },
+  { alias: "Sonic Dolphin", avatar: "🐬" },
+] as const;
+
+export function getRandomAnonIdentity(): AnonIdentity {
+  const idx = Math.floor(Math.random() * ANON_IDENTITIES.length);
+  return ANON_IDENTITIES[idx];
+}
+
+export interface AnonTopic {
+  key: string;
+  label: string;
+  emoji: string;
+  desc: string;
+}
+
+export const ANON_TOPICS: readonly AnonTopic[] = [
+  { key: "general", label: "Random Vibes", emoji: "🎲", desc: "Match with anyone across campus" },
+  { key: "late_night", label: "Late Night", emoji: "🌙", desc: "For the 2 AM deep thinkers" },
+  { key: "dsa_coding", label: "DSA & Code", emoji: "💻", desc: "LeetCode, projects & hackathons" },
+  { key: "hostel_talk", label: "Hostel Life", emoji: "🏢", desc: "UW1, UW2 & canteen gossip" },
+  { key: "chill", label: "Just Chill", emoji: "🎮", desc: "Gaming, music, anime & memes" },
+] as const;
+
+export const ANON_ICEBREAKERS = [
+  "👋 Hey! Which batch are you from?",
+  "🏢 Are you at Uniworld 1 or 2?",
+  "📚 How are you surviving the latest DSA assignment?",
+  "🍕 What's the best late-night food spot around campus?",
+  "🎮 Valorant or BGMI tonight?",
+  "🚀 Working on any cool side projects right now?",
+  "🎵 What's on your heavy rotation on Spotify?",
+  "☕ Canteen chai or Blinkit coffee?",
+] as const;
+

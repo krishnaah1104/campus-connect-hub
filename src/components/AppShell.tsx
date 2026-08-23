@@ -7,6 +7,7 @@ import {
   Menu,
   MessageCircle,
   ShieldCheck,
+  Sparkles,
   User,
   UsersRound,
   X,
@@ -21,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 const TABS = [
   { to: "/explore", label: "Explore", icon: Compass },
   { to: "/chat", label: "Chat", icon: MessageCircle },
+  { to: "/anonymous", label: "Vibe", icon: Sparkles },
   { to: "/groups", label: "Groups", icon: UsersRound },
   { to: "/activities", label: "Activities", icon: Zap },
 ] as const;
@@ -276,6 +278,7 @@ function SidebarLinks({ unreadCount }: { unreadCount: number }) {
           label="Direct Messages"
           badge={unreadCount > 0 ? unreadCount : undefined}
         />
+        <NavItem to="/anonymous" icon={Sparkles} label="Vibe Mode 🎭" />
         <NavItem to="/groups" icon={UsersRound} label="Group Channels" />
         <NavItem to="/activities" icon={Zap} label="Campus Activities" />
       </Section>
