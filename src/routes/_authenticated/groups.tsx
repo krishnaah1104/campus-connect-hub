@@ -619,7 +619,7 @@ function GroupsRoute() {
         <CreateChannelModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          onSuccess={(newChan) => {
+          onChannelCreated={(newChan) => {
             setSelectedChannelId(newChan.id);
             toast.success(`Space #${newChan.name} created!`);
           }}

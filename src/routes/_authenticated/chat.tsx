@@ -592,11 +592,12 @@ function ChatRoute() {
       </div>
 
       {/* ─── Profile Drawer for Active Peer ─── */}
-      <ProfileDrawer
-        student={selectedPeerProfile}
-        open={!!selectedPeerProfile}
-        onClose={() => setSelectedPeerProfile(null)}
-      />
+      {selectedPeerProfile && (
+        <ProfileDrawer
+          student={selectedPeerProfile}
+          onClose={() => setSelectedPeerProfile(null)}
+        />
+      )}
 
       {/* ─── New Chat Modal ─── */}
       {showNewChatModal && (

@@ -24,10 +24,12 @@ export function ProfileDrawer({
   student,
   onClose,
 }: {
-  student: Profile;
+  student: Profile | null | undefined;
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+
+  if (!student) return null;
 
   return (
     <div className="fixed inset-0 z-50">
