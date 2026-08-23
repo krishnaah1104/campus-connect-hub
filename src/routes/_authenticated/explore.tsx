@@ -177,35 +177,16 @@ export function ExplorePage() {
 
   return (
     <AppShell>
-      <div className="px-4 py-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight lg:text-3xl">
-              Explore Campus
-            </h1>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Discover batchmates, project collaborators, club leaders, and fellow commuters.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 font-semibold text-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              {stats.students} Students
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 font-semibold text-foreground">
-              <Users className="h-3.5 w-3.5 text-primary" />
-              {stats.clubs} Clubs
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 font-semibold text-foreground">
-              <Zap className="h-3.5 w-3.5 text-primary" />
-              {stats.skills} Skills
-            </span>
-          </div>
+      <div className="px-4 py-6 lg:px-8 space-y-4">
+        {/* Simple Page Title */}
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground lg:text-3xl">
+            Explore
+          </h1>
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="mt-5 flex gap-2">
+        <div className="flex gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl border border-input bg-card px-4 focus-within:ring-2 focus-within:ring-primary/20">
             <Search className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
             <input

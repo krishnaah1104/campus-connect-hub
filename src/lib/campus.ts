@@ -1,7 +1,7 @@
 export const BATCHES = ["2030", "2029", "2028", "2027"] as const;
 export const COURSES = ["CS + AI", "AI + B"] as const;
 export const DEGREES = ["IITM", "BITS"] as const;
-export const HOSTELS = ["Uniworld 1", "Uniworld 2", "Day Scholar"] as const;
+export const HOSTELS = ["Uniworld 1", "Uniworld 2"] as const;
 
 export const SKILLS = [
   "DSA",

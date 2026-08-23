@@ -89,20 +89,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link to="/explore" className="flex min-w-0 items-center gap-2.5">
+          <Link to="/explore" className="flex items-center gap-2.5">
             <span
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-black text-primary-foreground"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-black text-primary-foreground shadow-sm"
               style={{ background: "var(--gradient-brand)" }}
             >
               S
             </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-bold tracking-tight text-foreground">
-                ScaleX
-              </span>
-              <span className="block truncate text-[11px] text-muted-foreground">
-                Scaler School of Technology
-              </span>
+            <span className="text-base font-extrabold tracking-tight text-foreground">
+              ScaleX
             </span>
           </Link>
           <div className="relative flex shrink-0 items-center gap-2">
