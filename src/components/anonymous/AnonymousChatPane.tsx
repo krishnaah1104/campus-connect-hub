@@ -151,7 +151,7 @@ export function AnonymousChatPane({ session, onExit }: AnonymousChatPaneProps) {
                 ? "Session ended"
                 : isRevealed
                 ? "Profiles revealed! ✨"
-                : `You are chatting as ${myAlias}`}
+                : "100% Anonymous & Private"}
             </p>
           </div>
         </div>

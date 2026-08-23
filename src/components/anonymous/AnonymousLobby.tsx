@@ -1,19 +1,12 @@
 import { useState, useEffect } from "react";
 import {
-  Sparkles,
   Users,
-  Shuffle,
   ShieldCheck,
-  Radio,
   Clock,
   X,
   Zap,
+  Lock,
 } from "lucide-react";
-import {
-  ANON_TOPICS,
-  getRandomAnonIdentity,
-  type AnonIdentity,
-} from "@/lib/campus";
 import {
   useAnonymousLobby,
   useAnonymousPastSessions,
@@ -23,7 +16,7 @@ import { AnonymousSessionCard } from "./AnonymousSessionCard";
 
 interface AnonymousLobbyProps {
   isSearching: boolean;
-  onStartSearch: (identity: AnonIdentity, topic: string) => void;
+  onStartSearch: () => void;
   onCancelSearch: () => void;
   onSelectPastSession?: (session: AnonymousSession) => void;
 }
@@ -35,13 +28,7 @@ export function AnonymousLobby({
   onSelectPastSession,
 }: AnonymousLobbyProps) {
   const { onlineCount } = useAnonymousLobby();
-  const { data: pastSessions, isLoading: isHistoryLoading } =
-    useAnonymousPastSessions();
-
-  const [selectedTopic, setSelectedTopic] = useState<string>("general");
-  const [currentIdentity, setCurrentIdentity] = useState<AnonIdentity>(() =>
-    getRandomAnonIdentity()
-  );
+  const { data: pastSessions } = useAnonymousPastSessions();
   const [searchSeconds, setSearchSeconds] = useState(0);
 
   // Timer while searching
@@ -56,14 +43,6 @@ export function AnonymousLobby({
     return () => clearInterval(interval);
   }, [isSearching]);
 
-  const handleReroll = () => {
-    let next = getRandomAnonIdentity();
-    while (next.alias === currentIdentity.alias) {
-      next = getRandomAnonIdentity();
-    }
-    setCurrentIdentity(next);
-  };
-
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -71,25 +50,25 @@ export function AnonymousLobby({
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 space-y-8">
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12 space-y-8">
       {/* ─── Hero Section ─── */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Vibe Mode · SST Campus Matching</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary shadow-sm">
+          <Lock className="h-3.5 w-3.5" />
+          <span>Anonymous Campus Connect</span>
         </div>
 
         <h1 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">
-          Meet Someone New, Anonymously.
+          Connect Anonymously
         </h1>
 
         <p className="mx-auto max-w-md text-xs text-muted-foreground sm:text-sm leading-relaxed">
-          1-on-1 instant matching with randomized campus pseudonyms. Zero social
+          1-on-1 instant matching with verified campus batchmates. Zero social
           anxiety. Reveal your real profiles only if you both vibe!
         </p>
 
         {/* Live Presence Pill */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3.5 py-1.5 text-xs text-muted-foreground shadow-sm">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
@@ -100,10 +79,10 @@ export function AnonymousLobby({
         </div>
       </div>
 
-      {/* ─── Matching Card ─── */}
-      <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/80 p-6 shadow-card backdrop-blur-xl">
+      {/* ─── Direct Matching Card ─── */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/80 p-6 sm:p-8 shadow-card backdrop-blur-xl">
         {isSearching ? (
-          /* Searching State */
+          /* Searching Radar State */
           <div className="flex flex-col items-center justify-center py-8 text-center space-y-6">
             <div className="relative">
               {/* Radar pulse ripples */}
@@ -114,19 +93,16 @@ export function AnonymousLobby({
                 className="relative grid h-20 w-20 place-items-center rounded-3xl text-3xl text-primary-foreground shadow-glow"
                 style={{ background: "var(--gradient-brand)" }}
               >
-                {currentIdentity.avatar}
+                🎭
               </span>
             </div>
 
             <div className="space-y-1.5">
               <h3 className="text-lg font-bold text-foreground">
-                Matching as {currentIdentity.alias}…
+                Connecting with someone on campus…
               </h3>
               <p className="text-xs text-muted-foreground">
-                Searching for an online SST student in{" "}
-                <span className="font-semibold text-primary">
-                  {ANON_TOPICS.find((t) => t.key === selectedTopic)?.label}
-                </span>
+                Looking for an available SST batchmate.
               </p>
               <p className="text-xs font-mono text-primary font-bold">
                 ⏱ {formatTimer(searchSeconds)}
@@ -142,74 +118,28 @@ export function AnonymousLobby({
             </button>
           </div>
         ) : (
-          /* Idle State: Choose Topic & Disguise */
-          <div className="space-y-6">
-            {/* Identity Preview & Reroll */}
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
-                    Your Disguise For This Round
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-2xl">{currentIdentity.avatar}</span>
-                    <span className="text-base font-extrabold text-foreground">
-                      {currentIdentity.alias}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleReroll}
-                  className="flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                  title="Generate a new pseudonym"
-                >
-                  <Shuffle className="h-3.5 w-3.5" />
-                  <span>Reroll</span>
-                </button>
+          /* Clean Direct Action State */
+          <div className="space-y-6 py-2">
+            <div className="text-center space-y-2">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-secondary text-3xl shadow-sm border border-primary/20">
+                🎭
               </div>
-            </div>
-
-            {/* Topic Filter Selector */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Pick a Match Mood / Topic
-              </label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {ANON_TOPICS.map((topic) => {
-                  const active = selectedTopic === topic.key;
-                  return (
-                    <button
-                      key={topic.key}
-                      onClick={() => setSelectedTopic(topic.key)}
-                      className={`flex flex-col items-start rounded-2xl border p-3 text-left transition-all ${
-                        active
-                          ? "border-primary bg-primary/15 shadow-sm ring-1 ring-primary/40"
-                          : "border-border bg-card/60 hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <span className="text-base mb-1">{topic.emoji}</span>
-                      <span className="text-xs font-bold text-foreground">
-                        {topic.label}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground line-clamp-1">
-                        {topic.desc}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <h3 className="text-base font-bold text-foreground">
+                Ready to meet a campus classmate?
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                You'll be paired instantly in a private 1-on-1 chat. Identities stay completely hidden until mutual reveal.
+              </p>
             </div>
 
             {/* Big Action Button */}
             <button
-              onClick={() => onStartSearch(currentIdentity, selectedTopic)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-extrabold text-primary-foreground shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.99]"
+              onClick={onStartSearch}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-extrabold text-primary-foreground shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.99]"
               style={{ background: "var(--gradient-brand)" }}
             >
-              <Zap className="h-4 w-4" />
-              <span>Find a Vibe Match</span>
+              <Zap className="h-5 w-5" />
+              <span>Connect to Someone</span>
             </button>
           </div>
         )}
@@ -235,7 +165,7 @@ export function AnonymousLobby({
         <div className="space-y-3 pt-4 border-t border-border/60">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
             <Clock className="h-3.5 w-3.5 text-primary" />
-            <span>Recent Vibe Matches</span>
+            <span>Recent Anonymous Chats</span>
           </div>
 
           <div className="space-y-2">

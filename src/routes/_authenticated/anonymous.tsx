@@ -10,18 +10,17 @@ import {
   useCancelQueue,
   type AnonymousSession,
 } from "@/hooks/useAnonymous";
-import { type AnonIdentity } from "@/lib/campus";
 
 export const Route = createFileRoute("/_authenticated/anonymous")({
   head: () => ({
     meta: [
-      { title: "Vibe Mode — Anonymous Campus Matching" },
+      { title: "Anonymous Connect — ScaleX" },
       {
         name: "description",
         content:
           "Instant 1-on-1 anonymous matching with verified Scaler School of Technology peers.",
       },
-      { property: "og:title", content: "Vibe Mode — Anonymous Campus Matching" },
+      { property: "og:title", content: "Anonymous Connect — ScaleX" },
       {
         property: "og:description",
         content:
@@ -39,9 +38,6 @@ function AnonymousRoute() {
   const cancelQueue = useCancelQueue();
 
   const [isSearching, setIsSearching] = useState(false);
-  const [currentSearchIdentity, setCurrentSearchIdentity] =
-    useState<AnonIdentity | null>(null);
-  const [currentSearchTopic, setCurrentSearchTopic] = useState<string>("general");
   const [selectedPastSession, setSelectedPastSession] =
     useState<AnonymousSession | null>(null);
 
@@ -57,18 +53,17 @@ function AnonymousRoute() {
     let timer: NodeJS.Timeout;
     if (isSearching && !activeSession) {
       timer = setInterval(async () => {
-        if (!currentSearchIdentity) return;
         try {
           const res = await findMatch.mutateAsync({
-            alias: currentSearchIdentity.alias,
-            avatar: currentSearchIdentity.avatar,
-            topic: currentSearchTopic,
+            alias: "Anonymous Student",
+            avatar: "🎭",
+            topic: "general",
           });
 
           if (res.status === "matched" || res.status === "already_matched") {
             setIsSearching(false);
             await refetchActiveSession();
-            toast.success("Match found! Entering Vibe room! 🎉");
+            toast.success("Match found! Connected! 🎉");
           }
         } catch (e) {
           console.warn("[matchmaking poll error]", e);
@@ -79,28 +74,24 @@ function AnonymousRoute() {
   }, [
     isSearching,
     activeSession,
-    currentSearchIdentity,
-    currentSearchTopic,
     findMatch,
     refetchActiveSession,
   ]);
 
-  const handleStartSearch = async (identity: AnonIdentity, topic: string) => {
-    setCurrentSearchIdentity(identity);
-    setCurrentSearchTopic(topic);
+  const handleStartSearch = async () => {
     setIsSearching(true);
 
     try {
       const res = await findMatch.mutateAsync({
-        alias: identity.alias,
-        avatar: identity.avatar,
-        topic,
+        alias: "Anonymous Student",
+        avatar: "🎭",
+        topic: "general",
       });
 
       if (res.status === "matched" || res.status === "already_matched") {
         setIsSearching(false);
         await refetchActiveSession();
-        toast.success("Instant match found! 🎉");
+        toast.success("Connected with a batchmate! 🎉");
       }
     } catch (err: any) {
       setIsSearching(false);
