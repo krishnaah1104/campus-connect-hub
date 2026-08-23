@@ -1,16 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  Award,
   Bus,
   Check,
-  Compass,
-  Heart,
-  MapPin,
   Search,
   SlidersHorizontal,
   Sparkles,
-  Trophy,
   Users,
   X,
   Zap,

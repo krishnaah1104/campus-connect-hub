@@ -3,14 +3,12 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Award,
-  BookOpen,
   Briefcase,
   Bus,
   Camera,
   Check,
   Compass,
   Edit3,
-  ExternalLink,
   Github,
   Globe,
   Heart,
@@ -33,15 +31,11 @@ import { TagInput } from "@/components/TagInput";
 import { useMyProfile, type Profile } from "@/hooks/useProfile";
 import {
   ACHIEVEMENTS,
-  BATCHES,
   CLUBS,
-  COURSES,
-  DEGREES,
   HOSTELS,
   INDIAN_STATES,
   LIFE_STATUSES,
   SKILLS,
-  degreeLockedFor,
   initialsOf,
 } from "@/lib/campus";
 import { supabase } from "@/integrations/supabase/client";
