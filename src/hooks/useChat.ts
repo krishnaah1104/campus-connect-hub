@@ -72,7 +72,7 @@ export function useConversations() {
   useEffect(() => {
     if (!uid) return;
 
-    const channelName = `global_dm_realtime_${uid}`;
+    const channelName = `global_dm_realtime_${uid}_${Math.random().toString(36).slice(2)}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -224,7 +224,7 @@ export function useDirectMessages(conversationId: string | null) {
     }
 
     const channel = supabase
-      .channel(`dm:${conversationId}`)
+      .channel(`dm:${conversationId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -470,7 +470,7 @@ export function useChannelMessages(channelId: string | null) {
     }
 
     const channel = supabase
-      .channel(`ch:${channelId}`)
+      .channel(`ch:${channelId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {

@@ -199,7 +199,7 @@ export function useActiveAnonymousSession() {
     if (!activeSessionId) return;
 
     const channel = supabase
-      .channel(`anon_sess_state:${activeSessionId}`)
+      .channel(`anon_sess_state:${activeSessionId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -306,7 +306,7 @@ export function useAnonymousMessages(sessionId: string | null) {
     }
 
     const channel = supabase
-      .channel(`anon_msgs:${sessionId}`)
+      .channel(`anon_msgs:${sessionId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
