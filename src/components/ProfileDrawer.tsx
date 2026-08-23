@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
   Award,
+  BookOpen,
   Bus,
   ExternalLink,
   Github,

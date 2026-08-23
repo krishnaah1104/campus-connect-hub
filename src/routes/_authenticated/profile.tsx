@@ -3,12 +3,14 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Award,
+  BookOpen,
   Briefcase,
   Bus,
   Camera,
   Check,
   Compass,
   Edit3,
+  ExternalLink,
   Github,
   Globe,
   Heart,
@@ -31,11 +33,15 @@ import { TagInput } from "@/components/TagInput";
 import { useMyProfile, type Profile } from "@/hooks/useProfile";
 import {
   ACHIEVEMENTS,
+  BATCHES,
   CLUBS,
+  COURSES,
+  DEGREES,
   HOSTELS,
   INDIAN_STATES,
   LIFE_STATUSES,
   SKILLS,
+  degreeLockedFor,
   initialsOf,
 } from "@/lib/campus";
 import { supabase } from "@/integrations/supabase/client";
@@ -575,11 +581,10 @@ function ProfilePage() {
                       key={st.label}
                       type="button"
                       onClick={() => setLifeStatus(`${st.emoji} ${st.label}`)}
-                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                        lifeStatus === `${st.emoji} ${st.label}`
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${lifeStatus === `${st.emoji} ${st.label}`
                           ? "border-primary bg-primary/15 text-primary font-semibold"
                           : "border-border bg-card/80 text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       {st.emoji} {st.label}
                     </button>
@@ -666,11 +671,10 @@ function ProfilePage() {
                       key={club}
                       type="button"
                       onClick={() => toggleClub(club)}
-                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        active
+                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${active
                           ? "border-primary bg-primary/20 text-primary shadow-sm"
                           : "border-border bg-card/80 text-foreground/80 hover:bg-secondary"
-                      }`}
+                        }`}
                     >
                       {active && <Check className="h-3 w-3" />}
                       <span>{club}</span>
@@ -762,11 +766,10 @@ function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setBusOpted((v) => !v)}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
-                        busOpted
+                      className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${busOpted
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {busOpted ? "YES" : "NO"}
                     </button>
@@ -812,11 +815,10 @@ function ProfilePage() {
                       </span>
                     </span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                        cgpaPublic
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${cgpaPublic
                           ? "bg-success/15 text-success"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {cgpaPublic ? "PUBLIC" : "PRIVATE"}
                     </span>

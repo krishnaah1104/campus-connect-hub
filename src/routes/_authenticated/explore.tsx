@@ -1,11 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
+  Award,
   Bus,
   Check,
+  Compass,
+  Heart,
+  MapPin,
   Search,
   SlidersHorizontal,
   Sparkles,
+  Trophy,
   Users,
   X,
   Zap,
@@ -236,11 +241,10 @@ export function ExplorePage() {
           {/* Quick Bus Commuter toggle */}
           <button
             onClick={() => toggleFilter("bus_opted", "Bus Opted")}
-            className={`shrink-0 inline-flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
-              filters["bus_opted"]?.includes("Bus Opted")
+            className={`shrink-0 inline-flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${filters["bus_opted"]?.includes("Bus Opted")
                 ? "border-primary bg-primary/20 text-primary"
                 : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <Bus className="h-3.5 w-3.5" />
             <span>Bus Commuters</span>
@@ -253,11 +257,10 @@ export function ExplorePage() {
               <button
                 key={h}
                 onClick={() => toggleFilter("hostel", h)}
-                className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  active
+                className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${active
                     ? "border-primary bg-primary/15 text-primary font-semibold"
                     : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 🏢 {h}
               </button>
@@ -271,11 +274,10 @@ export function ExplorePage() {
               <button
                 key={b}
                 onClick={() => toggleFilter("batch", b)}
-                className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  active
+                className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${active
                     ? "border-primary bg-primary/15 text-primary font-semibold"
                     : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 🎓 {b}
               </button>
@@ -412,11 +414,10 @@ export function ExplorePage() {
                             key={opt}
                             type="button"
                             onClick={() => toggleFilter(group.key, opt)}
-                            className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                              isSelected
+                            className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${isSelected
                                 ? "border-primary bg-primary/20 text-primary font-semibold shadow-sm"
                                 : "border-border bg-card text-foreground/80 hover:bg-secondary"
-                            }`}
+                              }`}
                           >
                             {isSelected && <Check className="h-3 w-3" />}
                             <span>{opt}</span>

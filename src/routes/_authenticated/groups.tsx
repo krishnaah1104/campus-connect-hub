@@ -5,7 +5,10 @@ import {
   Hash,
   Info,
   Pin,
+  Plus,
   Send,
+  ShieldCheck,
+  Trash2,
   Users,
   UsersRound,
   X,
@@ -16,10 +19,13 @@ import { AppShell } from "@/components/AppShell";
 import { ChatEmptyState } from "@/components/chat/ChatEmptyState";
 import { ChatListItem, formatRelativeTime } from "@/components/chat/ChatListItem";
 import { ChatSearchBar } from "@/components/chat/ChatSearchBar";
+import { CreateChannelModal } from "@/components/chat/CreateChannelModal";
 import { useDirectory, useMyProfile } from "@/hooks/useProfile";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import {
   useChannels,
   useChannelMessages,
+  useDeleteChannel,
   useSendChannelMessage,
   useToggleReaction,
   type Channel,
@@ -59,17 +65,20 @@ const REACTION_PALETTE = ["👍", "🔥", "🚀", "🧠", "🎉", "❤️"];
 function GroupsRoute() {
   const { data: myProfile, user } = useMyProfile();
   const { data: directoryStudents } = useDirectory();
+  const { isAdmin } = useIsAdmin();
 
   // Supabase-backed state
   const { data: channels, isLoading: isChannelsLoading } = useChannels();
   const sendChannelMessage = useSendChannelMessage();
   const toggleReaction = useToggleReaction();
+  const deleteChannel = useDeleteChannel();
 
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [messageInput, setMessageInput] = useState("");
   const [showChannelInfo, setShowChannelInfo] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Messages for the active channel
   const { data: channelMessages, isLoading: isMessagesLoading } =
@@ -158,10 +167,25 @@ function GroupsRoute() {
                 Auto-enrolled campus communities
               </p>
             </div>
-            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              <Users className="h-3.5 w-3.5" />
-              <span>{(channels ?? []).length} Spaces</span>
-            </span>
+
+            <div className="flex items-center gap-2">
+              {isAdmin ? (
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105"
+                  style={{ background: "var(--gradient-brand)" }}
+                  title="Create a new campus group space (Admin)"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Space</span>
+                </button>
+              ) : (
+                <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{(channels ?? []).length} Spaces</span>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Search */}
@@ -509,10 +533,49 @@ function GroupsRoute() {
                   ))}
                 </div>
               </div>
+
+              {/* Admin Moderation Actions */}
+              {isAdmin && (
+                <div className="pt-3 border-t border-border/80">
+                  <p className="font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1 text-[10px]">
+                    <ShieldCheck className="h-3 w-3 text-primary" /> Admin Controls
+                  </p>
+                  <button
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `Are you sure you want to delete the space "${activeChannel.name}"? This action cannot be undone.`
+                        )
+                      ) {
+                        deleteChannel.mutate(activeChannel.id, {
+                          onSuccess: () => {
+                            toast.success(`Space "${activeChannel.name}" deleted.`);
+                            setSelectedChannelId(null);
+                          },
+                          onError: () => toast.error("Failed to delete channel."),
+                        });
+                      }
+                    }}
+                    disabled={deleteChannel.isPending}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>{deleteChannel.isPending ? "Deleting…" : "Delete Space"}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </aside>
         )}
       </div>
+
+      {/* Admin Create Channel Modal */}
+      <CreateChannelModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onChannelCreated={(newCh) => setSelectedChannelId(newCh.id)}
+      />
     </AppShell>
   );
 }
+

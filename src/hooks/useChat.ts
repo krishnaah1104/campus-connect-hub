@@ -653,3 +653,105 @@ export function useToggleReaction() {
     },
   });
 }
+
+// ──────────────────────────────────────────────────────────────
+// 10. Channel Management (Admin Only)
+// ──────────────────────────────────────────────────────────────
+
+export interface CreateChannelInput {
+  name: string;
+  slug?: string;
+  description?: string;
+  category: "batch" | "hostel" | "club" | "academics" | "general";
+  category_label?: string;
+  pinned_notice?: string;
+  icon?: string;
+  is_auto_enrolled?: boolean;
+  batch_filter?: string | null;
+  hostel_filter?: string | null;
+  club_filter?: string | null;
+}
+
+export function useCreateChannel() {
+  const queryClient = useQueryClient();
+  const { data: user } = useSession();
+
+  return useMutation({
+    mutationFn: async (input: CreateChannelInput): Promise<Channel> => {
+      if (!user) throw new Error("Not authenticated");
+
+      const cleanSlug = (
+        input.slug?.trim() ||
+        input.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+      );
+
+      const id = `ch-${cleanSlug || Date.now()}`;
+
+      const categoryLabels: Record<string, string> = {
+        batch: "Batch",
+        hostel: "Hostel",
+        club: "Club",
+        academics: "Academics",
+        general: "General",
+      };
+
+      const category_label =
+        input.category_label || categoryLabels[input.category] || "General";
+
+      const { data, error } = await supabase
+        .from("channels" as any)
+        .insert({
+          id,
+          name: input.name.trim(),
+          slug: cleanSlug,
+          description: input.description?.trim() || null,
+          category: input.category,
+          category_label,
+          pinned_notice: input.pinned_notice?.trim() || null,
+          icon: input.icon?.trim() || "💬",
+          is_auto_enrolled: input.is_auto_enrolled ?? true,
+          batch_filter: input.batch_filter ?? null,
+          hostel_filter: input.hostel_filter ?? null,
+          club_filter: input.club_filter ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        ...data,
+        member_count: 1,
+      } as Channel;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
+    },
+  });
+}
+
+export function useDeleteChannel() {
+  const queryClient = useQueryClient();
+  const { data: user } = useSession();
+
+  return useMutation({
+    mutationFn: async (channelId: string) => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("channels" as any)
+        .delete()
+        .eq("id", channelId);
+
+      if (error) throw error;
+      return channelId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["channels"] });
+    },
+  });
+}
+
