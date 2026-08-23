@@ -40,6 +40,7 @@ import {
   HOSTELS,
   INDIAN_STATES,
   LIFE_STATUSES,
+  ROLES,
   SKILLS,
   degreeLockedFor,
   initialsOf,
@@ -329,11 +330,21 @@ function ProfilePage() {
                   {profile.full_name ?? "Student"}
                 </h2>
 
-                {/* College Position / Title */}
+                {/* College Position / Instructor Badge */}
                 {profile.title && (
-                  <div className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary">
-                    <Sparkles className="h-3 w-3" />
-                    {profile.title}
+                  <div
+                    className={`mt-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold ${
+                      profile.title.toLowerCase().includes("instructor")
+                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                        : "bg-primary/15 text-primary border border-primary/25"
+                    }`}
+                  >
+                    {profile.title.toLowerCase().includes("instructor") ? (
+                      <Sparkles className="h-3.5 w-3.5 text-purple-300" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    <span>{profile.title}</span>
                   </div>
                 )}
 
@@ -557,18 +568,42 @@ function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground">
-                    College Position / Title
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-muted-foreground">
+                      College Position / Title
+                    </label>
+                    <span className="text-[11px] text-primary font-medium">
+                      Instructors & leaders can post announcements
+                    </span>
+                  </div>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. President of AI/ML Club, TA - DSA, Lead Organizer"
+                    placeholder="e.g. Instructor, VP of AI Club, Lead Organizer, Hostel Incharge"
                     className="mt-1.5 h-11 w-full rounded-xl border border-input bg-card px-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                   />
+
+                  {/* Role Presets */}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {ROLES.map((role) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setTitle(role)}
+                        className={`rounded-lg border px-2 py-0.5 text-[11px] transition-colors ${
+                          title === role
+                            ? "border-primary bg-primary/20 text-primary font-bold shadow-sm"
+                            : "border-border/70 bg-card/60 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {role === "Instructor" ? "🎓 " + role : role}
+                      </button>
+                    ))}
+                  </div>
+
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    Your official club, organization, or student leadership position at SST.
+                    Your official role at SST (e.g. Instructor, Club Lead, Hostel Incharge). Allows posting campus announcements.
                   </p>
                 </div>
               </div>

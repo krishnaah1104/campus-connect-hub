@@ -74,9 +74,15 @@ export function ProfileDrawer({
                 <ShieldCheck className="h-4 w-4 shrink-0 text-success" />
               </div>
 
-              {/* College Leadership Title */}
+              {/* College Leadership Title / Instructor */}
               {student.title && (
-                <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">
+                <div
+                  className={`mt-1 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold ${
+                    student.title.toLowerCase().includes("instructor")
+                      ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                      : "bg-primary/15 text-primary border border-primary/25"
+                  }`}
+                >
                   <Sparkles className="h-3 w-3" />
                   <span>{student.title}</span>
                 </div>

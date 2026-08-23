@@ -16,14 +16,13 @@ export const SKILLS = [
 ] as const;
 
 export const CLUBS = [
-  "AI/ML Club",
-  "Web Dev Club",
+  "AI Club",
   "Robotics",
-  "Finance",
-  "Design",
-  "Sports",
-  "Music",
   "Open Source",
+  "CP",
+  "Media 404",
+  "E-Cell",
+  "Cultural Club",
 ] as const;
 
 export const ACHIEVEMENTS = [
@@ -36,11 +35,13 @@ export const ACHIEVEMENTS = [
 ] as const;
 
 export const ROLES = [
+  "Instructor",
   "Club President",
   "Vice President",
   "Core Member",
   "Tech Lead",
   "Organizer",
+  "Hostel Incharge",
 ] as const;
 
 export const LIFE_STATUSES = [

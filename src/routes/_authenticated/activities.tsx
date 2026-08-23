@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   Zap,
   Users,
@@ -8,52 +9,149 @@ import {
   Hash,
   ArrowRight,
   Compass,
+  Plus,
+  Pin,
+  ExternalLink,
+  ShieldCheck,
+  Trash2,
+  Lock,
+  Megaphone,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { useDirectory } from "@/hooks/useProfile";
+import { useDirectory, useMyProfile } from "@/hooks/useProfile";
 import { useChannels } from "@/hooks/useChat";
+import {
+  useAnnouncements,
+  useCreateAnnouncement,
+  useDeleteAnnouncement,
+  type CampusAnnouncement,
+} from "@/hooks/useAnnouncements";
+import { initialsOf } from "@/lib/campus";
+import { formatRelativeTime } from "@/components/chat/ChatListItem";
 
 export const Route = createFileRoute("/_authenticated/activities")({
   head: () => ({
     meta: [
-      { title: "Campus Activities — ScaleX" },
+      { title: "Campus Activities & Announcements — ScaleX" },
       {
         name: "description",
         content:
-          "Clubs, campus initiatives, hackathons and activities across Scaler School of Technology.",
+          "Official campus announcements, club initiatives, and hackathons across Scaler School of Technology.",
       },
-      { property: "og:title", content: "Campus Activities — ScaleX" },
+      { property: "og:title", content: "Campus Activities & Announcements — ScaleX" },
       {
         property: "og:description",
         content:
-          "Clubs, campus initiatives, hackathons and activities across Scaler School of Technology.",
+          "Official campus announcements, club initiatives, and hackathons across Scaler School of Technology.",
       },
     ],
   }),
   component: ActivitiesPage,
 });
 
+const CATEGORIES = [
+  { key: "announcement", label: "📢 Announcement", color: "bg-primary/15 text-primary" },
+  { key: "hackathon", label: "🚀 Hackathon", color: "bg-purple-500/15 text-purple-400" },
+  { key: "club_event", label: "👥 Club Event", color: "bg-emerald-500/15 text-emerald-400" },
+  { key: "workshop", label: "💡 Workshop", color: "bg-amber-500/15 text-amber-400" },
+  { key: "sports", label: "⚽ Sports", color: "bg-rose-500/15 text-rose-400" },
+  { key: "general", label: "💬 General", color: "bg-secondary text-foreground" },
+] as const;
+
 function ActivitiesPage() {
   const navigate = useNavigate();
+  const { data: myProfile, user } = useMyProfile();
   const { data: students, isLoading: isDirLoading } = useDirectory();
   const { data: channels, isLoading: isChannelsLoading } = useChannels();
+  const { data: announcements, isLoading: isAnnouncementsLoading } = useAnnouncements();
+
+  const createAnnouncement = useCreateAnnouncement();
+  const deleteAnnouncement = useDeleteAnnouncement();
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<string>("announcement");
+  const [eventDate, setEventDate] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [isPinned, setIsPinned] = useState(false);
+
+  // Permission check: only users with a title/position (Instructors, Club Leads, etc.) can post
+  const canPost = Boolean(myProfile?.title && myProfile.title.trim().length > 0);
 
   const totalStudents = (students ?? []).length;
   const clubChannels = (channels ?? []).filter((c) => c.category === "club");
   const academicChannels = (channels ?? []).filter((c) => c.category === "academics");
   const totalChannels = (channels ?? []).length;
 
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !description.trim()) {
+      toast.error("Please provide both a title and description.");
+      return;
+    }
+
+    createAnnouncement.mutate(
+      {
+        title,
+        description,
+        category,
+        event_date: eventDate || null,
+        link_url: linkUrl || null,
+        is_pinned: isPinned,
+      },
+      {
+        onSuccess: () => {
+          setIsCreateModalOpen(false);
+          setTitle("");
+          setDescription("");
+          setEventDate("");
+          setLinkUrl("");
+          setIsPinned(false);
+        },
+      }
+    );
+  };
+
+  const handleDelete = (announcement: CampusAnnouncement) => {
+    if (confirm(`Delete announcement "${announcement.title}"?`)) {
+      deleteAnnouncement.mutate(announcement.id);
+    }
+  };
+
   return (
     <AppShell>
       <div className="px-4 py-6 lg:px-8 max-w-6xl mx-auto space-y-8">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground lg:text-3xl">
-            Campus Activities & Clubs
-          </h1>
-          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-            Explore campus clubs, academic tracks, and student initiatives across SST.
-          </p>
+        {/* Page Header & Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground lg:text-3xl">
+              Campus Activities & Announcements
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Official announcements, hackathons, and club initiatives across SST.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {canPost ? (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105"
+                style={{ background: "var(--gradient-brand)" }}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Post Announcement</span>
+              </button>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-card/60 px-3 py-2 text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Posting reserved for Instructors & Club Leads</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Real Dynamic Campus Stats */}
@@ -111,13 +209,188 @@ function ActivitiesPage() {
           </div>
         </div>
 
-        {/* Active Campus Club Spaces */}
+        {/* ─── Official Campus Announcements Feed ─── */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                Official Campus Announcements
+              </h2>
+            </div>
+            {canPost && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="text-xs font-semibold text-primary hover:underline"
+              >
+                + New Announcement
+              </button>
+            )}
+          </div>
+
+          {isAnnouncementsLoading ? (
+            <div className="space-y-3">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="h-32 animate-pulse rounded-3xl bg-card" />
+              ))}
+            </div>
+          ) : !announcements || announcements.length === 0 ? (
+            <div className="rounded-3xl border border-border/70 bg-card/40 p-8 text-center space-y-3">
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-secondary text-primary shadow-sm">
+                <Calendar className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-foreground">
+                  No Announcements Posted Yet
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Campus hackathons, club sessions, and faculty updates will appear here once announced by instructors and club leads.
+                </p>
+              </div>
+              {canPost && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
+                    style={{ background: "var(--gradient-brand)" }}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Create First Announcement</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {announcements.map((item) => {
+                const isCreator = user?.id === item.creator_id;
+                const catObj =
+                  CATEGORIES.find((c) => c.key === item.category) ?? CATEGORIES[0]!;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`glass-panel rounded-3xl border p-5 transition-all ${
+                      item.is_pinned
+                        ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
+                        : "border-border/80 bg-card/70 hover:border-primary/30"
+                    }`}
+                  >
+                    {/* Top Row: Author Info + Category Badge */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/20 bg-secondary text-xs font-bold">
+                          {item.creator?.avatar_url ? (
+                            <img
+                              src={item.creator.avatar_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            initialsOf(item.creator?.full_name)
+                          )}
+                        </span>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-foreground truncate">
+                              {item.creator?.full_name ?? "Campus Member"}
+                            </span>
+                            <ShieldCheck className="h-3.5 w-3.5 text-success shrink-0" />
+
+                            {/* Creator Title / Role Badge */}
+                            {item.creator?.title && (
+                              <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary truncate max-w-[160px]">
+                                {item.creator.title.toLowerCase().includes("instructor")
+                                  ? "🎓 " + item.creator.title
+                                  : "⚡ " + item.creator.title}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatRelativeTime(item.created_at)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {item.is_pinned && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            <Pin className="h-3 w-3 rotate-45" />
+                            Pinned
+                          </span>
+                        )}
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${catObj.color}`}
+                        >
+                          {catObj.label}
+                        </span>
+
+                        {isCreator && (
+                          <button
+                            onClick={() => handleDelete(item)}
+                            disabled={deleteAnnouncement.isPending}
+                            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors ml-1"
+                            title="Delete announcement"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Announcement Content */}
+                    <div className="mt-3.5 space-y-1.5">
+                      <h3 className="text-base font-bold text-foreground">{item.title}</h3>
+                      <p className="text-xs text-foreground/85 whitespace-pre-wrap leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    {/* Meta Row: Date & Action Link */}
+                    {(item.event_date || item.link_url) && (
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border/40 text-xs">
+                        {item.event_date ? (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground font-medium text-[11px]">
+                            <Calendar className="h-3.5 w-3.5 text-primary" />
+                            <span>Date / Deadline: </span>
+                            <strong className="text-foreground">{item.event_date}</strong>
+                          </span>
+                        ) : (
+                          <span />
+                        )}
+
+                        {item.link_url && (
+                          <a
+                            href={
+                              item.link_url.startsWith("http")
+                                ? item.link_url
+                                : `https://${item.link_url}`
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline text-[11px]"
+                          >
+                            <span>Open Details & Registration</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Active Campus Clubs & Communities ─── */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                Active Campus Clubs & Communities
+                Official SST Clubs & Communities
               </h2>
             </div>
             <Link
@@ -180,46 +453,140 @@ function ActivitiesPage() {
           )}
         </div>
 
-        {/* Upcoming Campus Events — Real Status */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-              Upcoming Events & Hackathons
-            </h2>
-          </div>
+        {/* ─── Create Announcement Modal ─── */}
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              onClick={() => setIsCreateModalOpen(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border bg-popover shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <div>
+                  <h2 className="text-base font-bold text-foreground">Post Campus Announcement</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Posting as {myProfile?.full_name} ({myProfile?.title})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="grid h-8 w-8 place-items-center rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-          <div className="rounded-3xl border border-border/70 bg-card/40 p-8 text-center space-y-3">
-            <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-secondary text-primary shadow-sm">
-              <Calendar className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-foreground">
-                No Events Scheduled This Week
-              </h3>
-              <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                Campus hackathons, sports leagues, and speaker sessions will be announced here once scheduled by club leads.
-              </p>
-            </div>
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
-              <Link
-                to="/groups"
-                className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
-                style={{ background: "var(--gradient-brand)" }}
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                <span>Join Club Discussions</span>
-              </Link>
-              <Link
-                to="/explore"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <Compass className="h-3.5 w-3.5" />
-                <span>Explore Directory</span>
-              </Link>
+              <form onSubmit={handleCreateSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Announcement Title <span className="text-destructive">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. AI Hackathon 2026 — Registrations Open!"
+                    required
+                    className="mt-1.5 h-11 w-full rounded-xl border border-input bg-card px-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Category</label>
+                  <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => setCategory(cat.key)}
+                        className={`rounded-xl border p-2 text-xs text-left transition-all ${
+                          category === cat.key
+                            ? "border-primary bg-primary/15 font-bold text-primary shadow-sm ring-1 ring-primary/30"
+                            : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    Description / Details <span className="text-destructive">*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Share all relevant event dates, eligibility, team size, venue, and participation details…"
+                    required
+                    className="mt-1.5 w-full rounded-xl border border-input bg-card p-3 text-xs outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground">
+                      Date / Deadline (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      placeholder="e.g. Sep 15, 2026 at 7 PM"
+                      className="mt-1.5 h-10 w-full rounded-xl border border-input bg-card px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground">
+                      Link / Form URL (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      placeholder="e.g. forms.gle/xyz or hackathon.com"
+                      className="mt-1.5 h-10 w-full rounded-xl border border-input bg-card px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="isPinnedCheck"
+                    checked={isPinned}
+                    onChange={(e) => setIsPinned(e.target.checked)}
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary/20"
+                  />
+                  <label htmlFor="isPinnedCheck" className="text-xs font-medium text-foreground cursor-pointer">
+                    Pin this announcement to the top of the feed
+                  </label>
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-2 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createAnnouncement.isPending || !title.trim() || !description.trim()}
+                    className="rounded-xl px-5 py-2 text-xs font-bold text-primary-foreground shadow-glow disabled:opacity-50"
+                    style={{ background: "var(--gradient-brand)" }}
+                  >
+                    {createAnnouncement.isPending ? "Posting…" : "Publish Announcement"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </AppShell>
   );
