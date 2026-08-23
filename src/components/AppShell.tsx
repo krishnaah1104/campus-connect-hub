@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const unread = useMemo(() => {
     const activeNotifs = markedReadAt
       ? dmNotifications.filter(
-          (n) => new Date(n.lastMessageAt) > new Date(markedReadAt)
+          (n) => n.lastMessageAt && new Date(n.lastMessageAt) > new Date(markedReadAt)
         )
       : dmNotifications;
     return activeNotifs.reduce((sum, n) => sum + (n.unreadCount || 1), 0);
