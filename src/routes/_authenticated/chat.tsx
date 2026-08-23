@@ -7,11 +7,10 @@ import {
   MessageCircle,
   MessageSquarePlus,
   Paperclip,
-  Phone,
   Send,
   ShieldCheck,
   Sparkles,
-  Video,
+  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +19,7 @@ import { AppShell } from "@/components/AppShell";
 import { ChatEmptyState } from "@/components/chat/ChatEmptyState";
 import { ChatListItem, formatRelativeTime } from "@/components/chat/ChatListItem";
 import { ChatSearchBar } from "@/components/chat/ChatSearchBar";
+import { ProfileDrawer } from "@/components/ProfileDrawer";
 import { useDirectory, useMyProfile, type Profile } from "@/hooks/useProfile";
 import {
   useConversations,
@@ -38,7 +38,7 @@ interface SearchParams {
 
 export const Route = createFileRoute("/_authenticated/chat")({
   validateSearch: (search: Record<string, unknown>): SearchParams =>
-    typeof search['peer'] === "string" ? { peer: search['peer'] } : {},
+    typeof search["peer"] === "string" ? { peer: search["peer"] } : {},
   head: () => ({
     meta: [
       { title: "Direct Messages — ScaleX" },
@@ -76,6 +76,7 @@ function ChatRoute() {
 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
+  const [selectedPeerProfile, setSelectedPeerProfile] = useState<Profile | null>(null);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
   const [newMessageText, setNewMessageText] = useState("");
@@ -193,7 +194,7 @@ function ChatRoute() {
       {
         conversationId: activeConversationId,
         content: text,
-        ...(activePeer?.id ? { recipientId: activePeer.id } : {}),
+        recipientId: activePeer?.id,
       },
       {
         onError: () => toast.error("Message failed to send. Try again."),
@@ -241,7 +242,6 @@ function ChatRoute() {
   return (
     <AppShell>
       <div className="flex h-[calc(100vh-73px-60px)] lg:h-[calc(100vh-73px)] w-full overflow-hidden bg-surface-deep">
-
         {/* ─── Left Pane: Conversation List ─── */}
         <aside
           className={`flex h-full w-full flex-col border-r border-border bg-card/40 lg:w-96 lg:shrink-0 ${
@@ -250,12 +250,7 @@ function ChatRoute() {
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/80 px-4 py-3.5">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Direct Messages</h1>
-              <p className="text-xs text-muted-foreground">
-                Verified campus peers & batchmates
-              </p>
-            </div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Direct Messages</h1>
             <button
               onClick={() => setShowNewChatModal(true)}
               className="flex items-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
@@ -276,42 +271,44 @@ function ChatRoute() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex gap-1.5 px-3 pt-3 pb-2 text-xs font-medium border-b border-border/40">
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`rounded-lg px-2.5 py-1 transition-colors ${
-                activeTab === "all"
-                  ? "bg-primary/15 text-primary font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All ({(conversations ?? []).length})
-            </button>
-            <button
-              onClick={() => setActiveTab("unread")}
-              className={`rounded-lg px-2.5 py-1 transition-colors ${
-                activeTab === "unread"
-                  ? "bg-primary/15 text-primary font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Unread ({totalUnread})
-            </button>
+          <div className="flex items-center justify-between px-3 pt-3 pb-2 text-xs font-medium border-b border-border/40">
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => setActiveTab("all")}
+                className={`rounded-lg px-2.5 py-1 transition-colors ${
+                  activeTab === "all"
+                    ? "bg-primary/15 text-primary font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All ({(conversations ?? []).length})
+              </button>
+              <button
+                onClick={() => setActiveTab("unread")}
+                className={`rounded-lg px-2.5 py-1 transition-colors ${
+                  activeTab === "unread"
+                    ? "bg-primary/15 text-primary font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Unread ({totalUnread})
+              </button>
+            </div>
             <button
               onClick={() => setShowNewChatModal(true)}
-              className="ml-auto flex items-center gap-1 text-[11px] text-primary hover:underline"
+              className="flex items-center gap-1 text-[11px] text-primary hover:underline"
             >
               <Compass className="h-3 w-3" />
-              Browse Peers
+              <span>Browse</span>
             </button>
           </div>
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto px-2 py-1">
             {isConversationsLoading ? (
-              <div className="space-y-1 p-3">
+              <div className="space-y-1 p-2">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-[72px] animate-pulse rounded-xl bg-card" />
+                  <div key={i} className="h-16 animate-pulse rounded-xl bg-card" />
                 ))}
               </div>
             ) : filteredConversations.length === 0 ? (
@@ -328,7 +325,7 @@ function ChatRoute() {
                   <div className="mt-2 text-center">
                     <button
                       onClick={() => setShowNewChatModal(true)}
-                      className="rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground"
+                      className="rounded-xl px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
                       style={{ background: "var(--gradient-brand)" }}
                     >
                       Browse Student Directory
@@ -337,27 +334,25 @@ function ChatRoute() {
                 )}
               </div>
             ) : (
-              <div>
+              <div className="space-y-0.5">
                 {filteredConversations.map((conv) => {
                   const isSelected = conv.id === activeConversationId;
                   return (
-                    <div
+                    <ChatListItem
                       key={conv.id}
-                      className={isSelected ? "bg-primary/10 border-l-2 border-primary" : ""}
-                    >
-                      <ChatListItem
-                        name={conv.peer?.full_name || "Campus Student"}
-                        subtitle={
-                          [conv.peer?.batch, conv.peer?.degree, conv.peer?.hostel]
-                            .filter(Boolean)
-                            .join(" · ")
-                        }
-                        lastMessage={conv.last_message_text}
-                        lastMessageAt={conv.last_message_at}
-                        unreadCount={conv.unread_count ?? 0}
-                        onClick={() => handleSelectConversation(conv)}
-                      />
-                    </div>
+                      name={conv.peer?.full_name || "Campus Student"}
+                      avatarUrl={conv.peer?.avatar_url}
+                      subtitle={
+                        [conv.peer?.batch, conv.peer?.degree, conv.peer?.hostel]
+                          .filter(Boolean)
+                          .join(" · ")
+                      }
+                      lastMessage={conv.last_message_text}
+                      lastMessageAt={conv.last_message_at}
+                      unreadCount={conv.unread_count ?? 0}
+                      isActive={isSelected}
+                      onClick={() => handleSelectConversation(conv)}
+                    />
                   );
                 })}
               </div>
@@ -374,9 +369,170 @@ function ChatRoute() {
           {activeConversationId ? (
             activePeer ? (
               <div className="flex h-full flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-border/80 bg-card/60 px-4 py-3 backdrop-blur-md">
-                <div className="flex items-center gap-3 min-w-0">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-border/80 bg-card/60 px-4 py-3 backdrop-blur-md">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      onClick={handleBackToList}
+                      className="grid h-8 w-8 place-items-center rounded-lg border border-border text-foreground transition-colors hover:bg-secondary lg:hidden"
+                      aria-label="Back to conversations"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedPeerProfile(activePeer)}
+                      className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/30 bg-secondary text-sm font-bold shadow-sm transition-transform hover:scale-105"
+                      title="View student profile"
+                    >
+                      {activePeer.avatar_url ? (
+                        <img
+                          src={activePeer.avatar_url}
+                          alt={activePeer.full_name ?? ""}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        initialsOf(activePeer.full_name)
+                      )}
+                    </button>
+
+                    <div className="min-w-0">
+                      <button
+                        onClick={() => setSelectedPeerProfile(activePeer)}
+                        className="flex items-center gap-1.5 text-left hover:underline"
+                      >
+                        <span className="truncate text-sm font-bold text-foreground">
+                          {activePeer.full_name}
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
+                          <ShieldCheck className="h-3 w-3" />
+                          Verified
+                        </span>
+                      </button>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {peerSubtitle || "Scaler School of Technology"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedPeerProfile(activePeer)}
+                      className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      title="View full profile"
+                    >
+                      <User className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Profile</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Messages Feed */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {!messages || messages.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-secondary text-primary shadow-sm">
+                        <Sparkles className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-semibold">Start the conversation</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Say hello to {activePeer.full_name?.split(" ")[0]}! Tap any starter below:
+                      </p>
+                      <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-md mx-auto">
+                        {QUICK_PROMPTS.map((prompt) => (
+                          <button
+                            key={prompt}
+                            onClick={() => handleSendMessage(prompt)}
+                            className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((msg) => {
+                      const isMe = msg.sender_id === user?.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
+                        >
+                          <div
+                            className={`max-w-[85%] sm:max-w-md rounded-2xl px-4 py-2.5 text-sm ${
+                              isMe
+                                ? "bg-primary text-primary-foreground rounded-br-sm shadow-md"
+                                : "glass-panel bg-card/90 text-foreground rounded-bl-sm border border-border/70"
+                            }`}
+                            style={isMe ? { background: "var(--gradient-brand)" } : undefined}
+                          >
+                            <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                            <div
+                              className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
+                                isMe ? "text-primary-foreground/75" : "text-muted-foreground"
+                              }`}
+                            >
+                              <span>{formatRelativeTime(msg.created_at)}</span>
+                              {isMe && (
+                                <CheckCheck
+                                  className={`h-3 w-3 ${
+                                    msg.read_at
+                                      ? "text-primary-foreground"
+                                      : "text-primary-foreground/50"
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Bar */}
+                <div className="border-t border-border bg-card/80 p-3 backdrop-blur-md">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toast("Attachments coming soon.")}
+                      className="grid h-11 w-11 place-items-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                      title="Attach file"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                    </button>
+
+                    <input
+                      value={newMessageText}
+                      onChange={(e) => setNewMessageText(e.target.value)}
+                      placeholder={`Message ${activePeer.full_name?.split(" ")[0] ?? "student"}…`}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-card px-4 text-sm outline-none transition-shadow focus:ring-2 focus:ring-ring"
+                      disabled={sendMessage.isPending}
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={!newMessageText.trim() || sendMessage.isPending}
+                      className="grid h-11 w-11 place-items-center rounded-xl text-primary-foreground transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-sm"
+                      style={{ background: "var(--gradient-brand)" }}
+                      aria-label="Send message"
+                    >
+                      <Send className="h-4.5 w-4.5" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              /* Peer profile loading skeleton */
+              <div className="flex h-full flex-col p-4 space-y-4">
+                <div className="flex items-center gap-3 border-b border-border/80 pb-3">
                   <button
                     onClick={handleBackToList}
                     className="grid h-8 w-8 place-items-center rounded-lg border border-border text-foreground transition-colors hover:bg-secondary lg:hidden"
@@ -384,236 +540,63 @@ function ChatRoute() {
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </button>
-
-                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-primary/30 bg-secondary text-sm font-bold">
-                    {activePeer.avatar_url ? (
-                      <img
-                        src={activePeer.avatar_url}
-                        alt={activePeer.full_name ?? ""}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      initialsOf(activePeer.full_name)
-                    )}
-                  </span>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-bold text-foreground">
-                        {activePeer.full_name}
-                      </span>
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                        <ShieldCheck className="h-3 w-3" />
-                        Verified
-                      </span>
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {peerSubtitle}
-                    </p>
+                  <div className="h-10 w-10 animate-pulse rounded-full bg-card" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 w-32 animate-pulse rounded bg-card" />
+                    <div className="h-3 w-20 animate-pulse rounded bg-card" />
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toast("Voice calls are coming soon.")}
-                    className="grid h-8 w-8 place-items-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    title="Audio call"
-                  >
-                    <Phone className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => toast("Video calls are coming soon.")}
-                    className="grid h-8 w-8 place-items-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    title="Video call"
-                  >
-                    <Video className="h-4 w-4" />
-                  </button>
+                <div className="flex-1 space-y-3 p-4">
+                  <div className="h-10 w-48 animate-pulse rounded-2xl bg-card" />
+                  <div className="h-10 w-64 animate-pulse rounded-2xl bg-card ml-auto" />
+                  <div className="h-10 w-52 animate-pulse rounded-2xl bg-card" />
                 </div>
               </div>
-
-              {/* Messages Feed */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {/* Security badge */}
-                <div className="flex justify-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/60 px-3 py-1 text-[11px] text-muted-foreground">
-                    <ShieldCheck className="h-3.5 w-3.5 text-success" />
-                    Verified communication within SST campus network.
-                  </span>
-                </div>
-
-                {(!messages || messages.length === 0) ? (
-                  <div className="py-12 text-center">
-                    <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-secondary text-primary">
-                      <Sparkles className="h-6 w-6" />
-                    </div>
-                    <p className="text-sm font-semibold">Start the conversation</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Say hello to {activePeer.full_name?.split(" ")[0]}! Tap any quick starter below:
-                    </p>
-                    <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-md mx-auto">
-                      {QUICK_PROMPTS.map((prompt) => (
-                        <button
-                          key={prompt}
-                          onClick={() => handleSendMessage(prompt)}
-                          className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground/90 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-                        >
-                          {prompt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isMe = msg.sender_id === user?.id;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
-                      >
-                        <div
-                          className={`max-w-[85%] sm:max-w-md rounded-2xl px-4 py-2.5 text-sm ${
-                            isMe
-                              ? "bg-primary text-primary-foreground rounded-br-sm shadow-md"
-                              : "glass-panel bg-card/90 text-foreground rounded-bl-sm"
-                          }`}
-                        >
-                          <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                          <div
-                            className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                              isMe ? "text-primary-foreground/75" : "text-muted-foreground"
-                            }`}
-                          >
-                            <span>{formatRelativeTime(msg.created_at)}</span>
-                            {isMe && (
-                              <CheckCheck
-                                className={`h-3 w-3 ${
-                                  msg.read_at ? "text-primary-foreground" : "text-primary-foreground/50"
-                                }`}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Quick Prompts */}
-              {messages && messages.length > 0 && (
-                <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-1.5 bg-card/20 border-t border-border/30">
-                  {QUICK_PROMPTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => handleSendMessage(prompt)}
-                      className="shrink-0 rounded-full border border-border/50 bg-card/60 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Input */}
-              <div className="border-t border-border bg-card/80 p-3 backdrop-blur-md">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toast("Attachments coming soon.")}
-                    className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                    title="Attach file"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </button>
-
-                  <input
-                    value={newMessageText}
-                    onChange={(e) => setNewMessageText(e.target.value)}
-                    placeholder={`Message ${activePeer.full_name?.split(" ")[0] ?? "student"}…`}
-                    className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-card px-4 text-sm outline-none transition-shadow focus:ring-2 focus:ring-ring"
-                    disabled={sendMessage.isPending}
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={!newMessageText.trim() || sendMessage.isPending}
-                    className="grid h-11 w-11 place-items-center rounded-xl text-primary-foreground transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                    style={{ background: "var(--gradient-brand)" }}
-                    aria-label="Send message"
-                  >
-                    <Send className="h-4.5 w-4.5" />
-                  </button>
-                </form>
-              </div>
-            </div>
+            )
           ) : (
-            /* Peer profile loading skeleton */
-            <div className="flex h-full flex-col p-4 space-y-4">
-              <div className="flex items-center gap-3 border-b border-border/80 pb-3">
-                <button
-                  onClick={handleBackToList}
-                  className="grid h-8 w-8 place-items-center rounded-lg border border-border text-foreground transition-colors hover:bg-secondary lg:hidden"
-                  aria-label="Back to conversations"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <div className="h-10 w-10 animate-pulse rounded-full bg-card" />
-                <div className="space-y-1.5 flex-1">
-                  <div className="h-4 w-32 animate-pulse rounded bg-card" />
-                  <div className="h-3 w-20 animate-pulse rounded bg-card" />
-                </div>
-              </div>
-              <div className="flex-1 space-y-3 p-4">
-                <div className="h-10 w-48 animate-pulse rounded-2xl bg-card" />
-                <div className="h-10 w-64 animate-pulse rounded-2xl bg-card ml-auto" />
-                <div className="h-10 w-52 animate-pulse rounded-2xl bg-card" />
-              </div>
-            </div>
-          )
-        ) : (
-          /* Empty state — no conversation selected */
-          <div className="grid h-full place-items-center p-6 text-center">
-            <div className="max-w-sm">
-              <div
-                className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl text-primary-foreground shadow-glow"
-                style={{ background: "var(--gradient-brand)" }}
-              >
-                <MessageCircle className="h-8 w-8" />
-              </div>
-              <h2 className="text-xl font-bold tracking-tight">Your Direct Messages</h2>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Select a student from the list or start a new chat with any classmate from the
-                campus directory.
-              </p>
-              <div className="mt-6 flex flex-col gap-2">
-                <button
-                  onClick={() => setShowNewChatModal(true)}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground"
+            /* Empty state — no conversation selected */
+            <div className="grid h-full place-items-center p-6 text-center">
+              <div className="max-w-sm">
+                <div
+                  className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl text-primary-foreground shadow-glow"
                   style={{ background: "var(--gradient-brand)" }}
                 >
-                  <MessageSquarePlus className="h-4 w-4" />
-                  New Conversation
-                </button>
-                <button
-                  onClick={() => navigate({ to: "/explore" })}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary"
-                >
-                  <Compass className="h-4 w-4" />
-                  Explore Campus Directory
-                </button>
+                  <MessageCircle className="h-8 w-8" />
+                </div>
+                <h2 className="text-xl font-bold tracking-tight">Your Direct Messages</h2>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Select a student from the list or start a new chat with any classmate from the
+                  campus directory.
+                </p>
+                <div className="mt-6 flex flex-col gap-2">
+                  <button
+                    onClick={() => setShowNewChatModal(true)}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-primary-foreground shadow-sm"
+                    style={{ background: "var(--gradient-brand)" }}
+                  >
+                    <MessageSquarePlus className="h-4 w-4" />
+                    New Conversation
+                  </button>
+                  <button
+                    onClick={() => navigate({ to: "/explore" })}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary"
+                  >
+                    <Compass className="h-4 w-4" />
+                    Explore Campus Directory
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
+
+      {/* ─── Profile Drawer for Active Peer ─── */}
+      <ProfileDrawer
+        student={selectedPeerProfile}
+        open={!!selectedPeerProfile}
+        onClose={() => setSelectedPeerProfile(null)}
+      />
 
       {/* ─── New Chat Modal ─── */}
       {showNewChatModal && (

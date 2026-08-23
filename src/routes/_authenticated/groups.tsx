@@ -120,13 +120,15 @@ function GroupsRoute() {
   // ── Handlers ────────────────────────────────────────────
 
   const handleSendMessage = () => {
-    const text = messageInput.trim();
-    if (!text || !selectedChannelId) return;
+    if (!messageInput.trim() || !selectedChannelId) return;
 
     sendChannelMessage.mutate(
-      { channelId: selectedChannelId, content: text },
       {
-        onError: () => toast.error("Message failed to send."),
+        channelId: selectedChannelId,
+        content: messageInput.trim(),
+      },
+      {
+        onError: () => toast.error("Failed to send message."),
       }
     );
 
@@ -134,11 +136,13 @@ function GroupsRoute() {
   };
 
   const handleReaction = (msg: ChannelMessage, emoji: string) => {
+    if (!user) return;
     toggleReaction.mutate({
       messageId: msg.id,
       channelId: msg.channel_id,
       emoji,
-      currentReactions: msg.reactions,
+      userId: user.id,
+      currentReactions: msg.reactions || {},
     });
   };
 
@@ -147,12 +151,26 @@ function GroupsRoute() {
     setShowChannelInfo(false);
   };
 
+  const handleDeleteChannel = (channel: Channel) => {
+    if (
+      confirm(
+        `Are you sure you want to delete "${channel.name}"? All messages will be permanently lost.`
+      )
+    ) {
+      deleteChannel.mutate(channel.id, {
+        onSuccess: () => {
+          setSelectedChannelId(null);
+          setShowChannelInfo(false);
+        },
+      });
+    }
+  };
+
   // ── Render ──────────────────────────────────────────────
 
   return (
     <AppShell>
       <div className="flex h-[calc(100vh-73px-60px)] lg:h-[calc(100vh-73px)] w-full overflow-hidden bg-surface-deep">
-
         {/* ─── Left Pane: Channel List ─── */}
         <aside
           className={`flex h-full w-full flex-col border-r border-border bg-card/40 lg:w-96 lg:shrink-0 ${
@@ -161,15 +179,10 @@ function GroupsRoute() {
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/80 px-4 py-3.5">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Group Channels</h1>
-              <p className="text-xs text-muted-foreground">
-                Auto-enrolled campus communities
-              </p>
-            </div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">Group Channels</h1>
 
             <div className="flex items-center gap-2">
-              {isAdmin ? (
+              {isAdmin && (
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105"
@@ -179,11 +192,6 @@ function GroupsRoute() {
                   <Plus className="h-3.5 w-3.5" />
                   <span>New Space</span>
                 </button>
-              ) : (
-                <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  <Users className="h-3.5 w-3.5" />
-                  <span>{(channels ?? []).length} Spaces</span>
-                </span>
               )}
             </div>
           </div>
@@ -215,11 +223,11 @@ function GroupsRoute() {
           </div>
 
           {/* Channel List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto px-2 py-1">
             {isChannelsLoading ? (
-              <div className="space-y-1 p-3">
+              <div className="space-y-1 p-2">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-[72px] animate-pulse rounded-xl bg-card" />
+                  <div key={i} className="h-16 animate-pulse rounded-xl bg-card" />
                 ))}
               </div>
             ) : filteredChannels.length === 0 ? (
@@ -230,22 +238,28 @@ function GroupsRoute() {
                 />
               </div>
             ) : (
-              <div>
+              <div className="space-y-0.5">
                 {filteredChannels.map((channel) => {
                   const isSelected = channel.id === selectedChannelId;
+                  const defaultIcon =
+                    channel.category === "batch"
+                      ? "🎓"
+                      : channel.category === "hostel"
+                      ? "🏢"
+                      : channel.category === "club"
+                      ? "👥"
+                      : "💬";
                   return (
-                    <div
+                    <ChatListItem
                       key={channel.id}
-                      className={isSelected ? "bg-primary/10 border-l-2 border-primary" : ""}
-                    >
-                      <ChatListItem
-                        name={channel.name}
-                        subtitle={`${channel.member_count} students · ${channel.category_label}`}
-                        lastMessage={channel.description}
-                        isGroup
-                        onClick={() => setSelectedChannelId(channel.id)}
-                      />
-                    </div>
+                      name={channel.name}
+                      icon={channel.icon || defaultIcon}
+                      subtitle={`${channel.member_count} students · ${channel.category_label}`}
+                      lastMessage={channel.description}
+                      isGroup
+                      isActive={isSelected}
+                      onClick={() => setSelectedChannelId(channel.id)}
+                    />
                   );
                 })}
               </div>
@@ -273,13 +287,12 @@ function GroupsRoute() {
                   </button>
 
                   <span
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-bold text-primary-foreground"
-                    style={{ background: "var(--gradient-brand)" }}
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-base font-bold shadow-sm border border-primary/20 bg-secondary"
                   >
                     {activeChannel.icon ? (
-                      <span className="text-lg">{activeChannel.icon}</span>
+                      <span>{activeChannel.icon}</span>
                     ) : (
-                      <Hash className="h-5 w-5" />
+                      <Hash className="h-5 w-5 text-primary" />
                     )}
                   </span>
 
@@ -288,29 +301,34 @@ function GroupsRoute() {
                       <span className="truncate text-sm font-bold text-foreground">
                         {activeChannel.name}
                       </span>
-                      <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                         {activeChannel.category_label}
                       </span>
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
-                      {activeChannel.description}
+                      {activeChannel.description || `${activeChannel.member_count} campus members`}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground mr-2">
-                    <Users className="h-3.5 w-3.5" />
-                    {activeChannel.member_count} members
-                  </span>
                   <button
                     onClick={() => setShowChannelInfo((v) => !v)}
-                    className={`grid h-8 w-8 place-items-center rounded-lg border border-border/60 transition-colors ${
+                    className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                  >
+                    <Users className="h-3.5 w-3.5 text-primary" />
+                    <span>{activeChannel.member_count}</span>
+                    <span className="hidden sm:inline">members</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowChannelInfo((v) => !v)}
+                    className={`grid h-8 w-8 place-items-center rounded-xl border transition-colors ${
                       showChannelInfo
                         ? "bg-primary/20 text-primary border-primary/40"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        : "border-border/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
-                    title="Channel info"
+                    title="Channel details"
                   >
                     <Info className="h-4 w-4" />
                   </button>
@@ -327,25 +345,25 @@ function GroupsRoute() {
               )}
 
               {/* Messages Feed */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-1">
                 {/* Channel Welcome */}
-                <div className="rounded-2xl border border-border/60 bg-card/40 p-5 text-center my-4">
+                <div className="rounded-3xl border border-border/60 bg-card/40 p-6 text-center my-4 max-w-lg mx-auto shadow-sm">
                   <div
-                    className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-2xl text-primary-foreground"
+                    className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl text-primary-foreground shadow-sm"
                     style={{ background: "var(--gradient-brand)" }}
                   >
                     {activeChannel.icon ? (
-                      <span className="text-xl">{activeChannel.icon}</span>
+                      <span className="text-2xl">{activeChannel.icon}</span>
                     ) : (
-                      <Hash className="h-6 w-6" />
+                      <Hash className="h-7 w-7" />
                     )}
                   </div>
                   <h3 className="text-base font-bold text-foreground">
-                    Welcome to {activeChannel.name}
+                    Welcome to #{activeChannel.name}
                   </h3>
-                  <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                     {activeChannel.description ||
-                      `This is the verified SST campus space for ${activeChannel.category_label}.`}
+                      `This is the verified SST campus space for ${activeChannel.category_label}. Join the conversation!`}
                   </p>
                 </div>
 
@@ -362,74 +380,118 @@ function GroupsRoute() {
                     ))}
                   </div>
                 ) : (
-                  (channelMessages ?? []).map((msg) => (
-                    <div key={msg.id} className="flex gap-3 group">
-                      <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-primary/25 bg-secondary text-xs font-bold">
-                        {msg.sender?.avatar_url ? (
-                          <img
-                            src={msg.sender.avatar_url}
-                            alt={msg.sender.full_name ?? ""}
-                            className="h-full w-full object-cover"
-                          />
+                  (channelMessages ?? []).map((msg, index, arr) => {
+                    const prevMsg = index > 0 ? arr[index - 1] : null;
+                    const isSameSenderAsPrev =
+                      prevMsg &&
+                      prevMsg.sender_id === msg.sender_id &&
+                      new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() <
+                        5 * 60 * 1000;
+
+                    const isFirstInGroup = !isSameSenderAsPrev;
+                    const isMe = msg.sender_id === user?.id;
+
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`group flex items-start gap-3 ${
+                          isFirstInGroup ? "mt-4 pt-1" : "mt-0.5"
+                        }`}
+                      >
+                        {/* Avatar Column */}
+                        {isFirstInGroup ? (
+                          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-2xl border border-primary/25 bg-secondary text-xs font-bold shadow-sm mt-0.5">
+                            {msg.sender?.avatar_url ? (
+                              <img
+                                src={msg.sender.avatar_url}
+                                alt={msg.sender.full_name ?? ""}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              initialsOf(msg.sender?.full_name)
+                            )}
+                          </span>
                         ) : (
-                          initialsOf(msg.sender?.full_name)
+                          <span className="w-9 shrink-0" />
                         )}
-                      </span>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground">
-                            {msg.sender?.full_name ?? "Student"}
-                          </span>
-                          {msg.sender?.batch && (
-                            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                              {msg.sender.batch}
-                            </span>
-                          )}
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatRelativeTime(msg.created_at)}
-                          </span>
-                        </div>
-
-                        <div className="mt-1 rounded-2xl rounded-tl-none border border-border/40 bg-card/70 px-4 py-2.5 text-sm text-foreground/90 inline-block max-w-xl">
-                          <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                        </div>
-
-                        {/* Reactions */}
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                          {Object.entries(msg.reactions || {}).map(([emoji, count]) => (
-                            <button
-                              key={emoji}
-                              onClick={() => handleReaction(msg, emoji)}
-                              className="flex items-center gap-1 rounded-full border border-border bg-card/60 px-2 py-0.5 text-[11px] hover:border-primary/50 transition-colors"
-                            >
-                              <span>{emoji}</span>
-                              <span className="text-[10px] font-semibold text-muted-foreground">
-                                {count as number}
+                        <div className="min-w-0 flex-1">
+                          {/* Sender Info (Only on first message in group) */}
+                          {isFirstInGroup && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-bold text-foreground">
+                                {msg.sender?.full_name ?? "Student"}
                               </span>
-                            </button>
-                          ))}
-                          {/* Quick reaction picker (visible on hover) */}
-                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {REACTION_PALETTE.filter(
-                              (e) => !Object.keys(msg.reactions || {}).includes(e)
-                            )
-                              .slice(0, 3)
-                              .map((emoji) => (
-                                <button
-                                  key={emoji}
-                                  onClick={() => handleReaction(msg, emoji)}
-                                  className="rounded-full border border-border/40 bg-card/40 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                                  title={`React with ${emoji}`}
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
+                              {msg.sender?.batch && (
+                                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                  {msg.sender.batch}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground font-medium">
+                                {formatRelativeTime(msg.created_at)}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Message Bubble */}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`rounded-2xl px-4 py-2 text-sm max-w-xl shadow-sm ${
+                                isFirstInGroup ? "rounded-tl-none" : ""
+                              } ${
+                                isMe
+                                  ? "bg-primary/15 border border-primary/30 text-foreground"
+                                  : "border border-border/60 bg-card/80 text-foreground/90"
+                              }`}
+                            >
+                              <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                            </div>
+
+                            {/* Timestamp on hover for grouped consecutive messages */}
+                            {!isFirstInGroup && (
+                              <span className="text-[9px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                                {formatRelativeTime(msg.created_at)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Reactions */}
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {Object.entries(msg.reactions || {}).map(([emoji, count]) => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleReaction(msg, emoji)}
+                                className="flex items-center gap-1 rounded-full border border-border bg-card/60 px-2 py-0.5 text-[11px] hover:border-primary/50 transition-colors shadow-sm"
+                              >
+                                <span>{emoji}</span>
+                                <span className="text-[10px] font-semibold text-muted-foreground">
+                                  {count as number}
+                                </span>
+                              </button>
+                            ))}
+
+                            {/* Quick reaction picker on hover */}
+                            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {REACTION_PALETTE.filter(
+                                (e) => !Object.keys(msg.reactions || {}).includes(e)
+                              )
+                                .slice(0, 3)
+                                .map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => handleReaction(msg, emoji)}
+                                    className="rounded-full border border-border/40 bg-card/60 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                    title={`React with ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -446,7 +508,7 @@ function GroupsRoute() {
                   <input
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    placeholder={`Message ${activeChannel.name}…`}
+                    placeholder={`Message #${activeChannel.name}…`}
                     className="h-11 min-w-0 flex-1 rounded-xl border border-input bg-card px-4 text-sm outline-none transition-shadow focus:ring-2 focus:ring-ring"
                     disabled={sendChannelMessage.isPending}
                   />
@@ -454,7 +516,7 @@ function GroupsRoute() {
                   <button
                     type="submit"
                     disabled={!messageInput.trim() || sendChannelMessage.isPending}
-                    className="grid h-11 w-11 place-items-center rounded-xl text-primary-foreground transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    className="grid h-11 w-11 place-items-center rounded-xl text-primary-foreground transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-sm"
                     style={{ background: "var(--gradient-brand)" }}
                     aria-label="Send message"
                   >
@@ -477,10 +539,10 @@ function GroupsRoute() {
         {showChannelInfo && activeChannel && (
           <aside className="w-80 border-l border-border bg-card/40 p-4 overflow-y-auto hidden xl:block">
             <div className="flex items-center justify-between border-b border-border pb-3">
-              <p className="text-sm font-bold">Channel Details</p>
+              <p className="text-sm font-bold text-foreground">Channel Details</p>
               <button
                 onClick={() => setShowChannelInfo(false)}
-                className="grid h-6 w-6 place-items-center rounded hover:bg-secondary"
+                className="grid h-7 w-7 place-items-center rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -491,28 +553,28 @@ function GroupsRoute() {
                 <p className="font-semibold uppercase tracking-wider text-muted-foreground">
                   About
                 </p>
-                <p className="mt-1 text-foreground/90">
-                  {activeChannel.description}
+                <p className="mt-1 text-foreground/90 leading-relaxed">
+                  {activeChannel.description || "Campus discussion channel for verified SST students."}
                 </p>
               </div>
 
               <div>
                 <p className="font-semibold uppercase tracking-wider text-muted-foreground">
-                  Members
+                  Enrolled Students
                 </p>
                 <p className="mt-1 text-foreground/90 font-medium">
-                  {activeChannel.member_count} enrolled students
+                  {activeChannel.member_count} verified members
                 </p>
               </div>
 
               <div>
                 <p className="font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                  Active in this space
+                  Active Batchmates
                 </p>
                 <div className="space-y-2">
                   {(directoryStudents ?? []).slice(0, 8).map((student) => (
                     <div key={student.id} className="flex items-center gap-2">
-                      <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[10px] font-bold overflow-hidden">
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[10px] font-bold overflow-hidden border border-primary/20">
                         {student.avatar_url ? (
                           <img
                             src={student.avatar_url}
@@ -523,59 +585,46 @@ function GroupsRoute() {
                           initialsOf(student.full_name)
                         )}
                       </span>
-                      <span className="truncate font-medium text-foreground">
-                        {student.full_name}
-                      </span>
-                      <span className="ml-auto text-[10px] text-muted-foreground">
-                        {student.batch}
-                      </span>
+                      <div className="min-w-0 flex-1 truncate">
+                        <p className="text-xs font-semibold text-foreground truncate">
+                          {student.full_name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {[student.batch, student.hostel].filter(Boolean).join(" · ")}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Admin Moderation Actions */}
+              {/* Admin Channel Moderation */}
               {isAdmin && (
-                <div className="pt-3 border-t border-border/80">
-                  <p className="font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1 text-[10px]">
-                    <ShieldCheck className="h-3 w-3 text-primary" /> Admin Controls
-                  </p>
+                <div className="pt-4 border-t border-border/60">
                   <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Are you sure you want to delete the space "${activeChannel.name}"? This action cannot be undone.`
-                        )
-                      ) {
-                        deleteChannel.mutate(activeChannel.id, {
-                          onSuccess: () => {
-                            toast.success(`Space "${activeChannel.name}" deleted.`);
-                            setSelectedChannelId(null);
-                          },
-                          onError: () => toast.error("Failed to delete channel."),
-                        });
-                      }
-                    }}
+                    onClick={() => handleDeleteChannel(activeChannel)}
                     disabled={deleteChannel.isPending}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-bold text-destructive hover:bg-destructive/20 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    <span>{deleteChannel.isPending ? "Deleting…" : "Delete Space"}</span>
+                    <span>Delete Space (Admin)</span>
                   </button>
                 </div>
               )}
             </div>
           </aside>
         )}
-      </div>
 
-      {/* Admin Create Channel Modal */}
-      <CreateChannelModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onChannelCreated={(newCh) => setSelectedChannelId(newCh.id)}
-      />
+        {/* ─── Admin Create Channel Modal ─── */}
+        <CreateChannelModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={(newChan) => {
+            setSelectedChannelId(newChan.id);
+            toast.success(`Space #${newChan.name} created!`);
+          }}
+        />
+      </div>
     </AppShell>
   );
 }
-
