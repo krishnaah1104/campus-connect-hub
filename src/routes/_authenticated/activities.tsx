@@ -115,16 +115,11 @@ function ActivitiesPage() {
       return;
     }
 
-    if (!effectiveTitle) {
-      toast.error("Please specify your official Role or Title (e.g. Instructor, Club Lead).");
-      return;
-    }
-
-    // If user didn't have a title in their profile, update it now
-    if (user && (!myProfile?.title || myProfile.title !== effectiveTitle)) {
+    // If user provided or changed their title, update their profile
+    if (user && customRole.trim() && myProfile?.title !== customRole.trim()) {
       await supabase
         .from("profiles")
-        .update({ title: effectiveTitle })
+        .update({ title: customRole.trim() })
         .eq("id", user.id);
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
       await queryClient.invalidateQueries({ queryKey: ["directory"] });
@@ -540,10 +535,10 @@ function ActivitiesPage() {
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-primary flex items-center gap-1">
                       <Sparkles className="h-3.5 w-3.5" />
-                      <span>Your Official Role / Title</span>
+                      <span>Your Role / Position (Optional)</span>
                     </label>
                     <span className="text-[10px] text-muted-foreground">
-                      {myProfile?.title ? "Saved in Profile" : "Required to publish"}
+                      {myProfile?.title ? `Profile: ${myProfile.title}` : "e.g. Instructor, VP, Student"}
                     </span>
                   </div>
 
@@ -551,8 +546,7 @@ function ActivitiesPage() {
                     type="text"
                     value={customRole}
                     onChange={(e) => setCustomRole(e.target.value)}
-                    placeholder="e.g. Instructor, VP of AI Club, Lead Organizer, Hostel Incharge"
-                    required
+                    placeholder="e.g. Instructor, VP of AI Club, Lead Organizer, Student"
                     className="h-10 w-full rounded-xl border border-input bg-card px-3 text-xs outline-none focus:ring-2 focus:ring-primary/20 font-medium"
                   />
 
@@ -712,7 +706,7 @@ function ActivitiesPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={createAnnouncement.isPending || !title.trim() || !description.trim() || !effectiveTitle}
+                    disabled={createAnnouncement.isPending || !title.trim() || !description.trim()}
                     className="rounded-xl px-5 py-2 text-xs font-bold text-primary-foreground shadow-glow disabled:opacity-50"
                     style={{ background: "var(--gradient-brand)" }}
                   >
