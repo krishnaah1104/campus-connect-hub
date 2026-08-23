@@ -98,9 +98,25 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/activities' | '/anonymous' | '/chat' | '/explore' | '/groups' | '/onboarding' | '/profile'
+  fullPaths:
+    | '/'
+    | '/activities'
+    | '/anonymous'
+    | '/chat'
+    | '/explore'
+    | '/groups'
+    | '/onboarding'
+    | '/profile'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/activities' | '/anonymous' | '/chat' | '/explore' | '/groups' | '/onboarding' | '/profile'
+  to:
+    | '/'
+    | '/activities'
+    | '/anonymous'
+    | '/chat'
+    | '/explore'
+    | '/groups'
+    | '/onboarding'
+    | '/profile'
   id:
     | '__root__'
     | '/'
