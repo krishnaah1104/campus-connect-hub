@@ -187,7 +187,11 @@ function ChatRoute() {
     if (!text || !activeConversationId) return;
 
     sendMessage.mutate(
-      { conversationId: activeConversationId, content: text },
+      {
+        conversationId: activeConversationId,
+        content: text,
+        recipientId: activePeer?.id,
+      },
       {
         onError: () => toast.error("Message failed to send. Try again."),
       }

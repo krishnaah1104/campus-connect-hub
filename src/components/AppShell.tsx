@@ -61,15 +61,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       }));
   }, [conversations]);
 
-  // Total unread, zeroed after user clicks "mark all read"
+  // Total unread messages count across all active conversations
   const unread = useMemo(() => {
-    if (markedReadAt) {
-      // Count only notifs newer than when the user marked all read
-      return dmNotifications.filter(
-        (n) => new Date(n.lastMessageAt) > new Date(markedReadAt)
-      ).length;
-    }
-    return dmNotifications.length;
+    const activeNotifs = markedReadAt
+      ? dmNotifications.filter(
+          (n) => new Date(n.lastMessageAt) > new Date(markedReadAt)
+        )
+      : dmNotifications;
+    return activeNotifs.reduce((sum, n) => sum + (n.unreadCount || 1), 0);
   }, [dmNotifications, markedReadAt]);
 
   const signOut = async () => {

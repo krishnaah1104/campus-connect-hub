@@ -12,6 +12,7 @@ export interface DirectMessage {
   id: string;
   conversation_id: string;
   sender_id: string;
+  recipient_id?: string | null;
   content: string;
   read_at: string | null;
   created_at: string;
@@ -71,39 +72,49 @@ export function useConversations() {
   useEffect(() => {
     if (!uid) return;
 
-    const channelName = `global_dm_realtime_${uid}_${Date.now()}`;
+    const channelName = `global_dm_realtime_${uid}`;
     const channel = supabase
       .channel(channelName)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "direct_messages",
         },
         async (payload) => {
-          // Instantly refetch conversations to update unread badge and notification count
-          await queryClient.refetchQueries({ queryKey: ["conversations", uid] });
+          const newMsg = payload.new as DirectMessage;
 
-          // If an incoming message was sent by someone else, notify with a toast alert
-          if (payload.eventType === "INSERT") {
-            const newMsg = payload.new as DirectMessage;
-            if (newMsg && newMsg.sender_id !== uid) {
-              const { data: sender } = await supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("id", newMsg.sender_id)
-                .maybeSingle();
+          // Instantly refresh conversation cache to update unread badge and notification count
+          await queryClient.invalidateQueries({ queryKey: ["conversations"] });
 
-              const senderName = sender?.full_name || "A classmate";
-              toast.info(`Message from ${senderName}`, {
-                description:
-                  newMsg.content.length > 50
-                    ? `${newMsg.content.slice(0, 50)}…`
-                    : newMsg.content,
-              });
-            }
+          // If an incoming message was sent by someone else to me, notify with a toast alert
+          if (newMsg && newMsg.sender_id !== uid) {
+            const { data: sender } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", newMsg.sender_id)
+              .maybeSingle();
+
+            const senderName = sender?.full_name || "A classmate";
+            toast.info(`Message from ${senderName}`, {
+              description:
+                newMsg.content.length > 50
+                  ? `${newMsg.content.slice(0, 50)}…`
+                  : newMsg.content,
+            });
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "direct_messages",
+        },
+        async () => {
+          await queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
       )
       .on(
@@ -114,7 +125,7 @@ export function useConversations() {
           table: "conversations",
         },
         async () => {
-          await queryClient.refetchQueries({ queryKey: ["conversations", uid] });
+          await queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
       )
       .subscribe();
@@ -131,7 +142,7 @@ export function useConversations() {
     queryFn: async () => {
       if (!uid) return [];
 
-      // Fetch conversations + both participant profiles in a single query
+      // Fetch conversations
       const { data, error } = await supabase
         .from("conversations" as any)
         .select("*")
@@ -160,21 +171,26 @@ export function useConversations() {
         profileMap.set(p.id, p);
       }
 
-      // Count unread messages per conversation
+      // Count unread messages per conversation (checks both recipient_id = uid and conversation_id)
+      const convIds = (data as any[]).map((d: any) => d.id);
       const { data: unreadData } = await supabase
         .from("direct_messages" as any)
         .select("conversation_id")
-        .in("conversation_id", (data as any[]).map((d: any) => d.id))
+        .in("conversation_id", convIds)
         .neq("sender_id", uid)
         .is("read_at", null);
 
       const unreadCounts = new Map<string, number>();
       for (const row of (unreadData ?? []) as any[]) {
-        unreadCounts.set(row.conversation_id, (unreadCounts.get(row.conversation_id) ?? 0) + 1);
+        unreadCounts.set(
+          row.conversation_id,
+          (unreadCounts.get(row.conversation_id) ?? 0) + 1
+        );
       }
 
       return (data as any[]).map((row: any): Conversation => {
-        const peerId = row.participant_1 === uid ? row.participant_2 : row.participant_1;
+        const peerId =
+          row.participant_1 === uid ? row.participant_2 : row.participant_1;
         return {
           ...row,
           peer: profileMap.get(peerId) ?? null,
@@ -276,19 +292,27 @@ export function useSendDirectMessage() {
     mutationFn: async ({
       conversationId,
       content,
+      recipientId,
     }: {
       conversationId: string;
       content: string;
+      recipientId?: string;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
+      const insertPayload: any = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: content.trim(),
+      };
+
+      if (recipientId) {
+        insertPayload.recipient_id = recipientId;
+      }
+
       const { data, error } = await supabase
         .from("direct_messages" as any)
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content: content.trim(),
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
@@ -296,7 +320,7 @@ export function useSendDirectMessage() {
       return data as DirectMessage;
     },
     // Optimistic update: append message immediately before server confirms
-    onMutate: async ({ conversationId, content }) => {
+    onMutate: async ({ conversationId, content, recipientId }) => {
       if (!user) return;
       await queryClient.cancelQueries({ queryKey: ["direct_messages", conversationId] });
 
@@ -304,6 +328,7 @@ export function useSendDirectMessage() {
         id: `optimistic-${Date.now()}`,
         conversation_id: conversationId,
         sender_id: user.id,
+        recipient_id: recipientId ?? null,
         content: content.trim(),
         read_at: null,
         created_at: new Date().toISOString(),
