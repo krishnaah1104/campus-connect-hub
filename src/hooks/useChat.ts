@@ -275,7 +275,7 @@ export function useDirectMessages(conversationId: string | null) {
         return [];
       }
 
-      return (data ?? []) as DirectMessage[];
+      return (data ?? []) as unknown as DirectMessage[];
     },
   });
 }
@@ -296,7 +296,7 @@ export function useSendDirectMessage() {
     }: {
       conversationId: string;
       content: string;
-      recipientId?: string;
+      recipientId?: string | undefined;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
@@ -317,7 +317,7 @@ export function useSendDirectMessage() {
         .single();
 
       if (error) throw error;
-      return data as DirectMessage;
+      return data as unknown as DirectMessage;
     },
     // Optimistic update: append message immediately before server confirms
     onMutate: async ({ conversationId, content, recipientId }) => {
@@ -685,16 +685,16 @@ export function useToggleReaction() {
 
 export interface CreateChannelInput {
   name: string;
-  slug?: string;
-  description?: string;
+  slug?: string | undefined;
+  description?: string | undefined;
   category: "batch" | "hostel" | "club" | "academics" | "general";
-  category_label?: string;
-  pinned_notice?: string;
-  icon?: string;
-  is_auto_enrolled?: boolean;
-  batch_filter?: string | null;
-  hostel_filter?: string | null;
-  club_filter?: string | null;
+  category_label?: string | undefined;
+  pinned_notice?: string | undefined;
+  icon?: string | undefined;
+  is_auto_enrolled?: boolean | undefined;
+  batch_filter?: string | null | undefined;
+  hostel_filter?: string | null | undefined;
+  club_filter?: string | null | undefined;
 }
 
 export function useCreateChannel() {
@@ -748,9 +748,9 @@ export function useCreateChannel() {
       if (error) throw error;
 
       return {
-        ...data,
+        ...(data as Record<string, unknown>),
         member_count: 1,
-      } as Channel;
+      } as unknown as Channel;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["channels"] });

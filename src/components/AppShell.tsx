@@ -157,7 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <button
                           onClick={() => {
                             setBell(false);
-                            navigate({ to: "/chat", search: { peer: n.peerId } });
+                            navigate({ to: "/chat", search: n.peerId ? { peer: n.peerId } : {} });
                           }}
                           className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-secondary/60 transition-colors"
                         >
@@ -310,8 +310,8 @@ function NavItem({
   to: string;
   icon: typeof Compass;
   label: string;
-  soon?: boolean;
-  badge?: number;
+  soon?: boolean | undefined;
+  badge?: number | undefined;
 }) {
   return (
     <Link

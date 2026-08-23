@@ -19,7 +19,7 @@ export function avatarColor(name: string): string {
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length] ?? "bg-slate-500";
 }
 
 export function getInitials(name: string): string {

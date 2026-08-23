@@ -89,7 +89,7 @@ function GroupsRoute() {
   // Auto-select first channel on initial load
   useEffect(() => {
     if (!selectedChannelId && channels && channels.length > 0) {
-      setSelectedChannelId(channels[0].id);
+      setSelectedChannelId(channels[0]!.id);
     }
   }, [channels, selectedChannelId]);
 

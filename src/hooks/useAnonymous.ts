@@ -354,7 +354,7 @@ export function useAnonymousMessages(sessionId: string | null) {
         return [];
       }
 
-      return (data ?? []) as AnonymousMessage[];
+      return (data ?? []) as unknown as AnonymousMessage[];
     },
   });
 }
@@ -390,7 +390,7 @@ export function useSendAnonymousMessage() {
         .single();
 
       if (error) throw error;
-      return data as AnonymousMessage;
+      return data as unknown as AnonymousMessage;
     },
     onMutate: async ({ sessionId, senderAlias, isP1, content }) => {
       await queryClient.cancelQueries({ queryKey: ["anonymous_messages", sessionId] });
