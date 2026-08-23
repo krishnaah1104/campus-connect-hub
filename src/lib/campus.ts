@@ -1,7 +1,7 @@
 export const BATCHES = ["2030", "2029", "2028", "2027"] as const;
 export const COURSES = ["CS + AI", "AI + B"] as const;
 export const DEGREES = ["IITM", "BITS"] as const;
-export const HOSTELS = ["Uniworld 1", "Uniworld 2"] as const;
+export const HOSTELS = ["Uniworld 1", "Uniworld 2", "Day Scholar"] as const;
 
 export const SKILLS = [
   "DSA",
@@ -169,7 +169,7 @@ export function normalizeTag(tag: string): string {
 
   return trimmed
     .split(" ")
-    .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1).toLowerCase() : ""))
+    .map((word) => (word.length > 0 ? word[0]!.toUpperCase() + word.slice(1).toLowerCase() : ""))
     .join(" ");
 }
 
@@ -211,7 +211,7 @@ export const ANON_IDENTITIES: readonly AnonIdentity[] = [
 
 export function getRandomAnonIdentity(): AnonIdentity {
   const idx = Math.floor(Math.random() * ANON_IDENTITIES.length);
-  return ANON_IDENTITIES[idx];
+  return ANON_IDENTITIES[idx]!;
 }
 
 export interface AnonTopic {

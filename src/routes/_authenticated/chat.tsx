@@ -33,13 +33,12 @@ import {
 import { initialsOf } from "@/lib/campus";
 
 interface SearchParams {
-  peer?: string;
+  peer?: string | undefined;
 }
 
 export const Route = createFileRoute("/_authenticated/chat")({
-  validateSearch: (search: Record<string, unknown>): SearchParams => ({
-    peer: typeof search.peer === "string" ? search.peer : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): SearchParams =>
+    typeof search['peer'] === "string" ? { peer: search['peer'] } : {},
   head: () => ({
     meta: [
       { title: "Direct Messages — ScaleX" },
@@ -194,7 +193,7 @@ function ChatRoute() {
       {
         conversationId: activeConversationId,
         content: text,
-        recipientId: activePeer?.id,
+        ...(activePeer?.id ? { recipientId: activePeer.id } : {}),
       },
       {
         onError: () => toast.error("Message failed to send. Try again."),

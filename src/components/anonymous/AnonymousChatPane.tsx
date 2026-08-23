@@ -42,8 +42,8 @@ export function AnonymousChatPane({ session, onExit }: AnonymousChatPaneProps) {
 
   const [input, setInput] = useState("");
   const [revealedResult, setRevealedResult] = useState<{
-    conversation_id?: string;
-    peer_id?: string;
+    conversation_id?: string | undefined;
+    peer_id?: string | undefined;
   } | null>(null);
 
   const isP1 = session.is_p1 ?? true;
@@ -251,7 +251,7 @@ export function AnonymousChatPane({ session, onExit }: AnonymousChatPaneProps) {
                 if (session.dm_conversation_id) {
                   navigate({
                     to: "/chat",
-                    search: { peer: revealedResult?.peer_id },
+                    search: revealedResult?.peer_id ? { peer: revealedResult.peer_id } : {},
                   });
                 } else {
                   navigate({ to: "/chat" });
